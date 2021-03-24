@@ -4,6 +4,7 @@
 ## Preliminaries
 
 library(car)
+library(estimatr)
 library(haven)
 library(lfe)
 library(plyr)
@@ -20,6 +21,20 @@ source("00_table_function.R")
 # Supplementary Information Table 1 - made manually
 
 # Supplementary Information Table 2 - vaccine information comprehension tests
+
+make_table(treatment = "factor(any_info_treatment)",
+           interaction = NULL,
+           outcome_vars = c("correct_1",
+                            "correct_2"),
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_any_info_treatment,
+           one_tailed = FALSE,
+           outcome_labels = c("Know that vaccines were approved",
+                              "Know that there are minimal side effects"),
+           treatment_labels = c("Any vaccine information"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table2_manip_A"
+)
 
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
@@ -42,20 +57,6 @@ make_table(treatment = "factor(information_treatment)",
                                 "Health + herd 70% + current",
                                 "Health + herd 80% + current",
                                 "Health + Biden"),
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table2_manip_A"
-)
-
-make_table(treatment = "factor(any_info_treatment)",
-           interaction = NULL,
-           outcome_vars = c("correct_1",
-                            "correct_2"),
-           fixed_effects = "factor(fixed_effects)",
-           weights = hesitant$IPW_any_info_treatment,
-           one_tailed = FALSE,
-           outcome_labels = c("Know that vaccines were approved",
-                              "Know that there are minimal side effects"),
-           treatment_labels = c("Any vaccine information"),
            data = hesitant,
            table_name = "Tables and Figures/SI_table2_manip_B"
 )
@@ -1861,3 +1862,6 @@ SI_tables <- lapply(1:length(tables_list), function(t)
 for (t in 1:length(tables_list)) {
   write(SI_tables[[t]], file = paste0("Tables and Figures/", tables_list[[t]]))
 }
+
+## Note: edit control group mean and std. dev. for Table 5
+## Note: manually edit control group mean and std dev. for Table 20

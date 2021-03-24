@@ -1,8 +1,3 @@
-library(dplyr)
-library(estimatr)
-library(Hmisc)
-library(texreg)
-
 make_table <- function(treatment,
                        interaction,
                        outcome_vars,
