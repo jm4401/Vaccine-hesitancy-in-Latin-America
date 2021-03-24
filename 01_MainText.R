@@ -1,4 +1,4 @@
-# This file replicates the analysis for Messaging interventions that increase COVID-19 vaccine willingness in Latin America
+# This file replicates the analysis for Messaging interventions that increase COVID-19 vaccine willingness in Latin America - Main Text
 # Pablo Argote, Elena Barham, Sarah Daly, Julian E. Gerez, John Marshall, Oscar Pocasangre
 
 ## Preliminaries
@@ -2589,9 +2589,10 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=motivation_treatm
         legend.text = element_text(size = 15), 
         axis.text=element_text(size=13))
 
-
 print(atebp)
 
 pdf("Tables and Figures/Figure7_D.pdf")
 print(atebp)
 dev.off()
+
+rm(list=setdiff(ls(), "hesitancy"))
