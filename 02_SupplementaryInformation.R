@@ -22,6 +22,10 @@ source("00_table_function.R")
 
 # Supplementary Information Table 2 - vaccine information comprehension tests
 
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
 make_table(treatment = "factor(any_info_treatment)",
            interaction = NULL,
            outcome_vars = c("correct_1",
@@ -35,10 +39,6 @@ make_table(treatment = "factor(any_info_treatment)",
            data = hesitant,
            table_name = "Tables and Figures/SI_table2_manip_A"
 )
-
-hesitant <- hesitancy %>%
-  filter(sample_causal == 1) %>%
-  filter(speeder != 1)
 
 make_table(treatment = "factor(information_treatment)",
            interaction = NULL,
