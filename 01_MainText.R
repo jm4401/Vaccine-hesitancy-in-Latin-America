@@ -248,6 +248,8 @@ rm(list=setdiff(ls(), "hesitancy"))
 
 # Figure 4 - average effects of basic vaccine information on vaccine willingness, by country
 
+## Panel A
+
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
   filter(speeder != 1)
@@ -264,354 +266,75 @@ fig_all <- felm(hesitancy_post_rec ~
                 weights = hesitant$IPW_any_info_treatment,
                 cmethod = 'reghdfe')
 
-fig_arg <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Argentina'],
-                cmethod = 'reghdfe', subset = (country=='Argentina'))
-
-
-fig_bra <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Brazil'],
-                cmethod = 'reghdfe', subset = (country=='Brazil'))
-
-
-fig_chi <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Chile'],
-                cmethod = 'reghdfe', subset = (country=='Chile'))
-
-
-fig_col <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Colombia'],
-                cmethod = 'reghdfe', subset = (country=='Colombia'))
-
-
-fig_mex <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Mexico'],
-                cmethod = 'reghdfe', subset = (country=='Mexico'))
-
-fig_per <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Peru'],
-                cmethod = 'reghdfe', subset = (country=='Peru'))
-
-coefficients = c("factor(any_info_treatment)1",
-                 "std_months_pre")
-
-coefs <- as.data.frame(fig_all$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_all$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_all, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-
-pval <- as.data.frame(round(fig_all$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_all$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_all$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0]))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_pooled <- regout %>% mutate(country = 'All')
-
-### Argentina
-
-coefs <- as.data.frame(fig_arg$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_arg$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_arg, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_arg$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_arg$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_arg$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                                   hesitant$country=='Argentina']))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                          hesitant$country=='Argentina'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                hesitant$country=='Argentina'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Argentina') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_arg <- regout %>% mutate(country = 'Argentina')
-
-### Brazil
-
-coefs <- as.data.frame(fig_bra$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_bra$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_bra, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_bra$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_bra$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_bra$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                                   hesitant$country=='Brazil']))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                          hesitant$country=='Brazil'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                hesitant$country=='Brazil'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Brazil') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_bra <- regout %>% mutate(country = 'Brazil')
-
-### Chile
-
-coefs <- as.data.frame(fig_chi$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_chi$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_chi, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_chi$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_chi$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_chi$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                                   hesitant$country=='Chile']))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                          hesitant$country=='Chile'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                hesitant$country=='Chile'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Chile') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_chi <- regout %>% mutate(country = 'Chile')
-
-### Colombia
-
-coefs <- as.data.frame(fig_col$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_col$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_col, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_col$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_col$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_col$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                                   hesitant$country=='Colombia']))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                          hesitant$country=='Colombia'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                hesitant$country=='Colombia'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Colombia') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_col <- regout %>% mutate(country = 'Colombia')
-
-### Mexico
-
-coefs <- as.data.frame(fig_mex$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_mex$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_mex, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_mex$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_mex$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_mex$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                                   hesitant$country=='Mexico']))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                          hesitant$country=='Mexico'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                hesitant$country=='Mexico'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Mexico') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_mex <- regout %>% mutate(country = 'Mexico')
-
-### Peru
-
-coefs <- as.data.frame(fig_per$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_per$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_per, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_per$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_per$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_per$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                                   hesitant$country=='Peru']))
-                                        + hesitancy_post_rec))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_post_rec", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_post_rec <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                          hesitant$country=='Peru'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0 &
-                                                                hesitant$country=='Peru'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Peru') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_per <- regout %>% mutate(country = 'Peru')
-
-# All 
-colnames(regout_pooled)[6] <- c('pval')
-colnames(regout_arg)[6] <- c('pval')
-colnames(regout_bra)[6] <- c('pval')
-colnames(regout_chi)[6] <- c('pval')
-colnames(regout_col)[6] <- c('pval')
-colnames(regout_mex)[6] <- c('pval')
-colnames(regout_per)[6] <- c('pval')
-
-regout <- rbind(regout_pooled, regout_arg, regout_bra, regout_chi, regout_col, regout_mex, regout_per)
-
+fig_countries <- lapply(unique(hesitant$country), function(i)
+       felm(hesitancy_post_rec ~
+              factor(any_info_treatment) +
+              std_months_pre | factor(fixed_effects),
+            data = hesitant,
+            weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
+            cmethod = 'reghdfe', subset = (country==i))       
+)
+
+fig <- list(fig_all,
+            fig_countries[[1]],
+            fig_countries[[2]],
+            fig_countries[[3]],
+            fig_countries[[4]],
+            fig_countries[[5]],
+            fig_countries[[6]])
+
+treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
+names(treatment) <- c("coefs", "hesitancy_post_rec", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
+treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
+treatment$hesitancy_post_rec <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
+treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
+treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
+treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
+treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
+treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
+treatment$any_info_treatment <- rep(1, length(fig))
+treatment$country <- c("All", unique(hesitant$country))
+
+control_all <- mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0]))
+names(control_all) <- "All"
+control_countries <- sapply(unique(hesitant$country), function(i)
+  mean(subset(hesitant, country == i)$hesitancy_post_rec[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
+)
+
+control <- data.frame(c(control_all, control_countries))
+names(control) <- "hesitancy_post_rec"
+control$country <- rownames(control)
+rownames(control) <- NULL
+control$any_info_treatment <- rep(0, length(fig))
+control$coefs <- rep("control", length(fig))
+
+treatment$coefplus <- control$hesitancy_post_rec + treatment$hesitancy_post_rec
+control$coefplus <- control$hesitancy_post_rec
+
+regout <- rbind.fill(treatment, control)
+
+n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
+  mutate(coefs = c("control",
+                   "factor(any_info_treatment)1")) %>%
+  mutate(ntext = paste0('n=', n)) %>%
+  mutate(country = "All") %>%
+  mutate(any_info_treatment = as.numeric(any_info_treatment))
+
+n_countries <- lapply(unique(hesitant$country), function(i)
+  hesitant %>% 
+    filter(country == i) %>%
+    group_by(any_info_treatment) %>% 
+    summarise(n = n()) %>%
+    mutate(coefs = c("control",
+                     "factor(any_info_treatment)1")) %>% 
+    mutate(ntext = paste0('n=', n)) %>%
+    mutate(country = i) %>%
+    mutate(any_info_treatment = as.numeric(any_info_treatment))
+)
+
+n_combined <- bind_rows(list(n_all, n_countries))
+
+regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
 
 atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
@@ -634,6 +357,15 @@ dev.off()
 
 ## Panel B
 
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
+hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
+                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
+
+hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
+
 fig_all <- felm(hesitancy_dummy_post ~
                   factor(any_info_treatment) +
                   std_months_pre | factor(fixed_effects),
@@ -641,354 +373,75 @@ fig_all <- felm(hesitancy_dummy_post ~
                 weights = hesitant$IPW_any_info_treatment,
                 cmethod = 'reghdfe')
 
-fig_arg <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Argentina'],
-                cmethod = 'reghdfe', subset = (country=='Argentina'))
-
-fig_bra <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Brazil'],
-                cmethod = 'reghdfe', subset = (country=='Brazil'))
-
-fig_chi <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Chile'],
-                cmethod = 'reghdfe', subset = (country=='Chile'))
-
-fig_col <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Colombia'],
-                cmethod = 'reghdfe', subset = (country=='Colombia'))
-
-fig_mex <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Mexico'],
-                cmethod = 'reghdfe', subset = (country=='Mexico'))
-
-fig_per <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Peru'],
-                cmethod = 'reghdfe', subset = (country=='Peru'))
-
-coefficients = c("factor(any_info_treatment)1",
-                 "std_months_pre")
-
-#pooled
-coefs <- as.data.frame(fig_all$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_all$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_all, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-
-pval <- as.data.frame(round(fig_all$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_all$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_all$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0]))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_pooled <- regout %>% mutate(country = 'All')
-
-# Argentina
-
-coefs <- as.data.frame(fig_arg$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_arg$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_arg, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_arg$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_arg$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_arg$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                                     hesitant$country=='Argentina']))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                              hesitant$country=='Argentina'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                  hesitant$country=='Argentina'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Argentina') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_arg <- regout %>% mutate(country = 'Argentina')
-
-# Brazil
-
-coefs <- as.data.frame(fig_bra$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_bra$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_bra, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_bra$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_bra$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_bra$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                                     hesitant$country=='Brazil']))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                              hesitant$country=='Brazil'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                  hesitant$country=='Brazil'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Brazil') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_bra <- regout %>% mutate(country = 'Brazil')
-
-# Chile
-
-coefs <- as.data.frame(fig_chi$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_chi$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_chi, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_chi$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_chi$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_chi$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                                     hesitant$country=='Chile']))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                              hesitant$country=='Chile'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                  hesitant$country=='Chile'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Chile') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_chi <- regout %>% mutate(country = 'Chile')
-
-# Colombia
-coefs <- as.data.frame(fig_col$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_col$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_col, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_col$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_col$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_col$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                                     hesitant$country=='Colombia']))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                              hesitant$country=='Colombia'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                  hesitant$country=='Colombia'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Colombia') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_col <- regout %>% mutate(country = 'Colombia')
-
-# Mexico
-
-coefs <- as.data.frame(fig_mex$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_mex$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_mex, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_mex$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_mex$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_mex$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                                     hesitant$country=='Mexico']))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                              hesitant$country=='Mexico'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                  hesitant$country=='Mexico'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Mexico') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_mex <- regout %>% mutate(country = 'Mexico')
-
-# Peru
-
-coefs <- as.data.frame(fig_per$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_per$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_per, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_per$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_per$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_per$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                                     hesitant$country=='Peru']))
-                                        + hesitancy_dummy_post))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "hesitancy_dummy_post", 'coefplus'))
-control$coefs <- c('control')
-control$hesitancy_dummy_post <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                              hesitant$country=='Peru'])))
-control$coefplus <- (mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0 &
-                                                                  hesitant$country=='Peru'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Peru') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_per <- regout %>% mutate(country = 'Peru')
-
-# All 
-colnames(regout_pooled)[6] <- c('pval')
-colnames(regout_arg)[6] <- c('pval')
-colnames(regout_bra)[6] <- c('pval')
-colnames(regout_chi)[6] <- c('pval')
-colnames(regout_col)[6] <- c('pval')
-colnames(regout_mex)[6] <- c('pval')
-colnames(regout_per)[6] <- c('pval')
-
-regout <- rbind(regout_arg, regout_bra, regout_chi, regout_col, regout_mex, regout_per, regout_pooled)
-
+fig_countries <- lapply(unique(hesitant$country), function(i)
+  felm(hesitancy_dummy_post ~
+         factor(any_info_treatment) +
+         std_months_pre | factor(fixed_effects),
+       data = hesitant,
+       weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
+       cmethod = 'reghdfe', subset = (country==i))       
+)
+
+fig <- list(fig_all,
+            fig_countries[[1]],
+            fig_countries[[2]],
+            fig_countries[[3]],
+            fig_countries[[4]],
+            fig_countries[[5]],
+            fig_countries[[6]])
+
+treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
+names(treatment) <- c("coefs", "hesitancy_dummy_post", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
+treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
+treatment$hesitancy_dummy_post <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
+treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
+treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
+treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
+treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
+treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
+treatment$any_info_treatment <- rep(1, length(fig))
+treatment$country <- c("All", unique(hesitant$country))
+
+control_all <- mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0]))
+names(control_all) <- "All"
+control_countries <- sapply(unique(hesitant$country), function(i)
+  mean(subset(hesitant, country == i)$hesitancy_dummy_post[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
+)
+
+control <- data.frame(c(control_all, control_countries))
+names(control) <- "hesitancy_dummy_post"
+control$country <- rownames(control)
+rownames(control) <- NULL
+control$any_info_treatment <- rep(0, length(fig))
+control$coefs <- rep("control", length(fig))
+
+treatment$coefplus <- control$hesitancy_dummy_post + treatment$hesitancy_dummy_post
+control$coefplus <- control$hesitancy_dummy_post
+
+regout <- rbind.fill(treatment, control)
+
+n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
+  mutate(coefs = c("control",
+                   "factor(any_info_treatment)1")) %>%
+  mutate(ntext = paste0('n=', n)) %>%
+  mutate(country = "All") %>%
+  mutate(any_info_treatment = as.numeric(any_info_treatment))
+
+n_countries <- lapply(unique(hesitant$country), function(i)
+  hesitant %>% 
+    filter(country == i) %>%
+    group_by(any_info_treatment) %>% 
+    summarise(n = n()) %>%
+    mutate(coefs = c("control",
+                     "factor(any_info_treatment)1")) %>% 
+    mutate(ntext = paste0('n=', n)) %>%
+    mutate(country = i) %>%
+    mutate(any_info_treatment = as.numeric(any_info_treatment))
+)
+
+n_combined <- bind_rows(list(n_all, n_countries))
+
+regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
 
 atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
@@ -1010,6 +463,15 @@ dev.off()
 
 ## Panel C
 
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
+hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
+                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
+
+hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
+
 fig_all <- felm(quickly_post_1_text_reversed2 ~
                   factor(any_info_treatment) +
                   std_months_pre | factor(fixed_effects),
@@ -1017,361 +479,75 @@ fig_all <- felm(quickly_post_1_text_reversed2 ~
                 weights = hesitant$IPW_any_info_treatment,
                 cmethod = 'reghdfe')
 
-fig_arg <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Argentina'],
-                cmethod = 'reghdfe', subset = (country=='Argentina'))
-
-fig_bra <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Brazil'],
-                cmethod = 'reghdfe', subset = (country=='Brazil'))
-
-fig_chi <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Chile'],
-                cmethod = 'reghdfe', subset = (country=='Chile'))
-
-
-fig_col <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Colombia'],
-                cmethod = 'reghdfe', subset = (country=='Colombia'))
-
-fig_mex <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Mexico'],
-                cmethod = 'reghdfe', subset = (country=='Mexico'))
-
-fig_per <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Peru'],
-                cmethod = 'reghdfe', subset = (country=='Peru'))
-
-coefficients = c("factor(any_info_treatment)1",
-                 "std_months_pre")
-
-#pooled
-coefs <- as.data.frame(fig_all$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_all$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_all, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-
-pval <- as.data.frame(round(fig_all$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_all$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_all$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0]))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_pooled <- regout %>% mutate(country = 'All')
-
-# Argentina
-
-coefs <- as.data.frame(fig_arg$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_arg$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_arg, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_arg$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_arg$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_arg$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                              hesitant$country=='Argentina']))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                                hesitant$country=='Argentina'])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Argentina'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Argentina') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_arg <- regout %>% mutate(country = 'Argentina')
-
-
-# Brazil
-
-coefs <- as.data.frame(fig_bra$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_bra$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_bra, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_bra$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_bra$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_bra$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                              hesitant$country=='Brazil']))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                                hesitant$country=='Brazil'])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Brazil'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Brazil') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_bra <- regout %>% mutate(country = 'Brazil')
-
-# Chile
-
-coefs <- as.data.frame(fig_chi$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_chi$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_chi, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_chi$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_chi$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_chi$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                              hesitant$country=='Chile']))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                                hesitant$country=='Chile'])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Chile'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Chile') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_chi <- regout %>% mutate(country = 'Chile')
-
-# Colombia
-coefs <- as.data.frame(fig_col$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_col$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_col, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_col$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_col$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_col$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                              hesitant$country=='Colombia']))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                                hesitant$country=='Colombia'])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Colombia'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Colombia') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_col <- regout %>% mutate(country = 'Colombia')
-
-
-# Mexico
-
-coefs <- as.data.frame(fig_mex$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_mex$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_mex, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_mex$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_mex$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_mex$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                              hesitant$country=='Mexico']))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                                hesitant$country=='Mexico'])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Mexico'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Mexico') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_mex <- regout %>% mutate(country = 'Mexico')
-
-# Peru
-
-coefs <- as.data.frame(fig_per$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_per$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_per, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_per$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_per$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_per$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                              hesitant$country=='Peru']))
-                                        + quickly_post_1_text_reversed2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "quickly_post_1_text_reversed2", 'coefplus'))
-control$coefs <- c('control')
-control$quickly_post_1_text_reversed2 <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                                                hesitant$country=='Peru'])))
-control$coefplus <- (mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Peru'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Peru') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_per <- regout %>% mutate(country = 'Peru')
-
-# All 
-colnames(regout_pooled)[6] <- c('pval')
-colnames(regout_arg)[6] <- c('pval')
-colnames(regout_bra)[6] <- c('pval')
-colnames(regout_chi)[6] <- c('pval')
-colnames(regout_col)[6] <- c('pval')
-colnames(regout_mex)[6] <- c('pval')
-colnames(regout_per)[6] <- c('pval')
-
-regout <- rbind(regout_arg, regout_bra, regout_chi, regout_col, regout_mex, regout_per, regout_pooled)
-
+fig_countries <- lapply(unique(hesitant$country), function(i)
+  felm(quickly_post_1_text_reversed2 ~
+         factor(any_info_treatment) +
+         std_months_pre | factor(fixed_effects),
+       data = hesitant,
+       weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
+       cmethod = 'reghdfe', subset = (country==i))       
+)
+
+fig <- list(fig_all,
+            fig_countries[[1]],
+            fig_countries[[2]],
+            fig_countries[[3]],
+            fig_countries[[4]],
+            fig_countries[[5]],
+            fig_countries[[6]])
+
+treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
+names(treatment) <- c("coefs", "quickly_post_1_text_reversed2", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
+treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
+treatment$quickly_post_1_text_reversed2 <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
+treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
+treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
+treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
+treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
+treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
+treatment$any_info_treatment <- rep(1, length(fig))
+treatment$country <- c("All", unique(hesitant$country))
+
+control_all <- mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0]))
+names(control_all) <- "All"
+control_countries <- sapply(unique(hesitant$country), function(i)
+  mean(subset(hesitant, country == i)$quickly_post_1_text_reversed2[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
+)
+
+control <- data.frame(c(control_all, control_countries))
+names(control) <- "quickly_post_1_text_reversed2"
+control$country <- rownames(control)
+rownames(control) <- NULL
+control$any_info_treatment <- rep(0, length(fig))
+control$coefs <- rep("control", length(fig))
+
+treatment$coefplus <- control$quickly_post_1_text_reversed2 + treatment$quickly_post_1_text_reversed2
+control$coefplus <- control$quickly_post_1_text_reversed2
+
+regout <- rbind.fill(treatment, control)
+
+n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
+  mutate(coefs = c("control",
+                   "factor(any_info_treatment)1")) %>%
+  mutate(ntext = paste0('n=', n)) %>%
+  mutate(country = "All") %>%
+  mutate(any_info_treatment = as.numeric(any_info_treatment))
+
+n_countries <- lapply(unique(hesitant$country), function(i)
+  hesitant %>% 
+    filter(country == i) %>%
+    group_by(any_info_treatment) %>% 
+    summarise(n = n()) %>%
+    mutate(coefs = c("control",
+                     "factor(any_info_treatment)1")) %>% 
+    mutate(ntext = paste0('n=', n)) %>%
+    mutate(country = i) %>%
+    mutate(any_info_treatment = as.numeric(any_info_treatment))
+)
+
+n_combined <- bind_rows(list(n_all, n_countries))
+
+regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
 
 atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
@@ -1396,6 +572,15 @@ dev.off()
 
 ## Panel D
 
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
+hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
+                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
+
+hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
+
 fig_all <- felm(encourage2 ~
                   factor(any_info_treatment) +
                   std_months_pre | factor(fixed_effects),
@@ -1403,366 +588,75 @@ fig_all <- felm(encourage2 ~
                 weights = hesitant$IPW_any_info_treatment,
                 cmethod = 'reghdfe')
 
-fig_arg <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Argentina'],
-                cmethod = 'reghdfe', subset = (country=='Argentina'))
-
-
-fig_bra <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Brazil'],
-                cmethod = 'reghdfe', subset = (country=='Brazil'))
-
-
-fig_chi <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Chile'],
-                cmethod = 'reghdfe', subset = (country=='Chile'))
-
-
-fig_col <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Colombia'],
-                cmethod = 'reghdfe', subset = (country=='Colombia'))
-
-
-fig_mex <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Mexico'],
-                cmethod = 'reghdfe', subset = (country=='Mexico'))
-
-fig_per <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment[hesitant$country=='Peru'],
-                cmethod = 'reghdfe', subset = (country=='Peru'))
-
-
-coefficients = c("factor(any_info_treatment)1",
-                 "std_months_pre")
-
-#pooled
-coefs <- as.data.frame(fig_all$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_all$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_all, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-
-pval <- as.data.frame(round(fig_all$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_all$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_all$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0]))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_pooled <- regout %>% mutate(country = 'All')
-
-# Argentina
-
-coefs <- as.data.frame(fig_arg$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_arg$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_arg, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_arg$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_arg$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_arg$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Argentina']))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                          hesitant$country=='Argentina'])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                        hesitant$country=='Argentina'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Argentina') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_arg <- regout %>% mutate(country = 'Argentina')
-
-
-# Brazil
-
-coefs <- as.data.frame(fig_bra$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_bra$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_bra, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_bra$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_bra$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_bra$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Brazil']))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                          hesitant$country=='Brazil'])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                        hesitant$country=='Brazil'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Brazil') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_bra <- regout %>% mutate(country = 'Brazil')
-
-# Chile
-
-coefs <- as.data.frame(fig_chi$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_chi$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_chi, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_chi$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_chi$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_chi$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Chile']))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                          hesitant$country=='Chile'])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                        hesitant$country=='Chile'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Chile') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_chi <- regout %>% mutate(country = 'Chile')
-
-
-# Colombia
-coefs <- as.data.frame(fig_col$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_col$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_col, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_col$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_col$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_col$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Colombia']))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                          hesitant$country=='Colombia'])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                        hesitant$country=='Colombia'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Colombia') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_col <- regout %>% mutate(country = 'Colombia')
-
-# Mexico
-
-coefs <- as.data.frame(fig_mex$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_mex$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_mex, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_mex$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_mex$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_mex$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Mexico']))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                          hesitant$country=='Mexico'])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                        hesitant$country=='Mexico'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Mexico') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_mex <- regout %>% mutate(country = 'Mexico')
-
-# Peru
-
-coefs <- as.data.frame(fig_per$coefficients)
-coefs <- coefs %>% mutate(coefs = coefficients)
-rse <- as.data.frame(fig_per$rse)
-rse <- rse %>% mutate(coefs = coefficients)
-ci <- as.data.frame(confint(fig_per, level=0.95))
-ci <- ci %>% mutate(coefs = coefficients)
-
-
-regout <- merge(coefs, rse, by=c('coefs'))
-colnames(regout)[3] <- c('rse')
-regout <- merge(regout, ci, by=c('coefs'))
-colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
-regout <- regout %>% filter(coefs != 'std_months_pre')
-pval <- as.data.frame(round(fig_per$rpval, 2))
-pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_per$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_per$rpval, 2)`)))
-regout <- merge(regout, pval, by=c('coefs'))
-
-
-regout <- regout %>% mutate(coefplus = (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                                           hesitant$country=='Peru']))
-                                        + encourage2))
-
-control <- setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("coefs", "encourage2", 'coefplus'))
-control$coefs <- c('control')
-control$encourage2 <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                          hesitant$country=='Peru'])))
-control$coefplus <- (mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0 &
-                                                        hesitant$country=='Peru'])))
-
-regout <- rbind.fill(regout, control)
-
-n <- hesitant %>% filter(country=='Peru') %>%  group_by(any_info_treatment) %>% summarise(n = n())
-n <- n %>% mutate(coefs = c("control",
-                            "factor(any_info_treatment)1"))
-
-n <- n %>% mutate(ntext = paste0('n=', n))
-regout <- merge(regout, n, by=c('coefs'))
-
-regout_per <- regout %>% mutate(country = 'Peru')
-
-# All 
-colnames(regout_pooled)[6] <- c('pval')
-colnames(regout_arg)[6] <- c('pval')
-colnames(regout_bra)[6] <- c('pval')
-colnames(regout_chi)[6] <- c('pval')
-colnames(regout_col)[6] <- c('pval')
-colnames(regout_mex)[6] <- c('pval')
-colnames(regout_per)[6] <- c('pval')
-
-regout <- rbind(regout_arg, regout_bra, regout_chi, regout_col, regout_mex, regout_per, regout_pooled)
-
+fig_countries <- lapply(unique(hesitant$country), function(i)
+  felm(encourage2 ~
+         factor(any_info_treatment) +
+         std_months_pre | factor(fixed_effects),
+       data = hesitant,
+       weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
+       cmethod = 'reghdfe', subset = (country==i))       
+)
+
+fig <- list(fig_all,
+            fig_countries[[1]],
+            fig_countries[[2]],
+            fig_countries[[3]],
+            fig_countries[[4]],
+            fig_countries[[5]],
+            fig_countries[[6]])
+
+treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
+names(treatment) <- c("coefs", "encourage2", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
+treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
+treatment$encourage2 <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
+treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
+treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
+treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
+treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
+treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
+treatment$any_info_treatment <- rep(1, length(fig))
+treatment$country <- c("All", unique(hesitant$country))
+
+control_all <- mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0]))
+names(control_all) <- "All"
+control_countries <- sapply(unique(hesitant$country), function(i)
+  mean(subset(hesitant, country == i)$encourage2[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
+)
+
+control <- data.frame(c(control_all, control_countries))
+names(control) <- "encourage2"
+control$country <- rownames(control)
+rownames(control) <- NULL
+control$any_info_treatment <- rep(0, length(fig))
+control$coefs <- rep("control", length(fig))
+
+treatment$coefplus <- control$encourage2 + treatment$encourage2
+control$coefplus <- control$encourage2
+
+regout <- rbind.fill(treatment, control)
+
+n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
+  mutate(coefs = c("control",
+                   "factor(any_info_treatment)1")) %>%
+  mutate(ntext = paste0('n=', n)) %>%
+  mutate(country = "All") %>%
+  mutate(any_info_treatment = as.numeric(any_info_treatment))
+
+n_countries <- lapply(unique(hesitant$country), function(i)
+  hesitant %>% 
+    filter(country == i) %>%
+    group_by(any_info_treatment) %>% 
+    summarise(n = n()) %>%
+    mutate(coefs = c("control",
+                     "factor(any_info_treatment)1")) %>% 
+    mutate(ntext = paste0('n=', n)) %>%
+    mutate(country = i) %>%
+    mutate(any_info_treatment = as.numeric(any_info_treatment))
+)
+
+n_combined <- bind_rows(list(n_all, n_countries))
+
+regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
 
 atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
@@ -2090,8 +984,6 @@ n <- n %>% mutate(coefs = c("0_control",
 n <- n %>% mutate(ntext = paste0('n=', n))
 regout <- merge(regout, n, by=c('coefs'))
 
-
-
 atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=information_treatment)) +
   geom_bar(position="stack", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, size=0.71) +
@@ -2256,7 +1148,6 @@ regout <- regout %>% mutate(ord_outcome = ifelse(outcome=='wtv_scale', 'A',
                                                  ifelse(outcome=='wtv_share', 'B', 
                                                         ifelse(outcome=='months', 'C', 
                                                                ifelse(outcome=='encourage', 'D', 0)))))
-
 
 herd_current <- ggplot(regout, aes(ord_outcome, coef)) +
   geom_errorbar(
