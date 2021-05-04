@@ -955,8 +955,8 @@ herd_current <- ggplot(regout, aes(ord_outcome, coef)) +
            y=c(-0.02, -0.17, -0.015, -0.095, -.265, -.345, -0.025, -0.085), 
            label=c('n=1947', 'n=953', 'n=1947', 'n=953', "n=1922", "n=944", "n=1862", "n=909"), 
            size=4) +
-  scale_x_discrete(labels = c("Vaccine \nwillingness \n(scale) ", "Share willing \nto vaccinate", 
-                              "Months would \nwait to get vaccinated \nonce eligible", "Share likely to \nencourage others \nto get vaccinated")) +
+  scale_x_discrete(labels = c("Vaccine \nwillingness \n(scale) ", "Willing \nto vaccinate", 
+                              "Months would \nwait to get vaccinated \nonce eligible", "Likely to \nencourage others \nto get vaccinated")) +
   theme(legend.position = "right", legend.title = element_blank()) +
   geom_text(aes(label=pvaltext, x=c(0.92, 1.92, 2.92, 3.92, 1.13, 2.13, 3.13, 4.11), 
                 y=c(0.26, 0.13, 0.44, 0.125, 0.05, 0.02,  0.29, 0.04)), vjust=-1) +
