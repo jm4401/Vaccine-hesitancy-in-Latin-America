@@ -254,64 +254,107 @@ hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
   filter(speeder != 1)
 
-hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
-                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
+hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
 
 hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
 
-fig_all <- felm(hesitancy_post_rec ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment,
-                cmethod = 'reghdfe')
+outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text_reversed2", "encourage2")
 
-fig_countries <- lapply(unique(hesitant$country), function(i)
-       felm(hesitancy_post_rec ~
-              factor(any_info_treatment) +
-              std_months_pre | factor(fixed_effects),
-            data = hesitant,
-            weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
-            cmethod = 'reghdfe', subset = (country==i))       
+fig_all <- lapply(outcomes, function(y)
+  felm(
+    as.formula(
+      paste0(y, "~ factor(any_info_treatment) + std_months_pre | factor(fixed_effects)")
+      ),
+    data = hesitant,
+    weights = hesitant$IPW_any_info_treatment,
+    cmethod = 'reghdfe'
+    )
 )
 
-fig <- list(fig_all,
-            fig_countries[[1]],
-            fig_countries[[2]],
-            fig_countries[[3]],
-            fig_countries[[4]],
-            fig_countries[[5]],
-            fig_countries[[6]])
+names(fig_all) <- outcomes
 
-treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
-names(treatment) <- c("coefs", "hesitancy_post_rec", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
-treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
-treatment$hesitancy_post_rec <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
-treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
-treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
-treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
-treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
-treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
-treatment$any_info_treatment <- rep(1, length(fig))
-treatment$country <- c("All", unique(hesitant$country))
-
-control_all <- mean(na.omit(hesitant$hesitancy_post_rec[hesitant$any_info_treatment==0]))
-names(control_all) <- "All"
-control_countries <- sapply(unique(hesitant$country), function(i)
-  mean(subset(hesitant, country == i)$hesitancy_post_rec[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
+fig_countries <- lapply(outcomes, function(y)
+  lapply(unique(hesitant$country), function(i)
+       felm(
+         as.formula(
+           paste0(y, "~ factor(any_info_treatment) + std_months_pre | factor(fixed_effects)")
+           ),
+         data = hesitant,
+         weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
+         cmethod = 'reghdfe',
+         subset = (country==i)
+         )
+  )
 )
 
-control <- data.frame(c(control_all, control_countries))
-names(control) <- "hesitancy_post_rec"
-control$country <- rownames(control)
-rownames(control) <- NULL
-control$any_info_treatment <- rep(0, length(fig))
-control$coefs <- rep("control", length(fig))
+names(fig_countries) <- outcomes
 
-treatment$coefplus <- control$hesitancy_post_rec + treatment$hesitancy_post_rec
-control$coefplus <- control$hesitancy_post_rec
+fig <- lapply(outcomes, function(y)
+  list(fig_all[[y]],
+       fig_countries[[y]][[1]],
+       fig_countries[[y]][[2]],
+       fig_countries[[y]][[3]],
+       fig_countries[[y]][[4]],
+       fig_countries[[y]][[5]],
+       fig_countries[[y]][[6]]
+       )
+  )
 
-regout <- rbind.fill(treatment, control)
+names(fig) <- outcomes
+
+treatment <- lapply(outcomes, function(y) as.data.frame(matrix(NA, nrow = length(fig[[y]]), ncol = 10)))
+
+names(treatment) <- outcomes
+
+for (y in outcomes) {
+  names(treatment[[y]]) <- c("coefs", y, "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
+  treatment[[y]]$coefs <- rep("factor(any_info_treatment)1", length(fig[[y]]))
+  treatment[[y]][,y] <- sapply(fig[[y]], function(i) coef(i))['factor(any_info_treatment)1',]
+  treatment[[y]]$rse <- sapply(1:length(fig[[y]]), function(i) fig[[y]][[i]]$rse['factor(any_info_treatment)1'])
+  treatment[[y]]$lower_ci <- sapply(1:length(fig[[y]]), function(i) confint(fig[[y]][[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
+  treatment[[y]]$higher_ci <- sapply(1:length(fig[[y]]), function(i) confint(fig[[y]][[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
+  treatment[[y]]$pval <- sapply(1:length(fig[[y]]), function(i) fig[[y]][[i]]$rpval['factor(any_info_treatment)1'])
+  treatment[[y]]$pvaltext <- ifelse(treatment[[y]]$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment[[y]]$pval, 2)))
+  treatment[[y]]$any_info_treatment <- rep(1, length(fig[[y]]))
+  treatment[[y]]$country <- c("All", unique(hesitant$country))
+}
+
+control_all <- lapply(outcomes, function(y)
+  colMeans(hesitant[which(hesitant$any_info_treatment == 0),y], na.rm = TRUE)
+)
+
+names(control_all) <- outcomes
+
+for (y in outcomes) {
+  names(control_all[[y]]) <- "All"
+}
+
+control_countries <- lapply(outcomes, function(y)
+  sapply(unique(hesitant$country), function(i)
+    colMeans(hesitant[which(hesitant$any_info_treatment == 0 & hesitant$country == i),y],
+             na.rm = TRUE)
+  )
+)
+
+names(control_countries) <- outcomes
+
+control <- lapply(outcomes, function(y) data.frame(c(control_all[[y]], control_countries[[y]])))
+
+names(control) <- outcomes
+
+for (y in outcomes) {
+  names(control[[y]]) <- y
+  rownames(control[[y]]) <- NULL
+  control[[y]]$country <- c("All", "Argentina", "Brazil", "Chile", "Colombia", "Mexico", "Peru")
+  control[[y]]$any_info_treatment <- rep(0, length(fig[[y]]))
+  control[[y]]$coefs <- rep("control", length(fig[[y]]))
+  treatment[[y]]$coefplus <- control[[y]][,y] + treatment[[y]][,y]
+  control[[y]]$coefplus <- control[[y]][,y]
+}
+
+regout <- lapply(outcomes, function(y) rbind.fill(treatment[[y]], control[[y]]))
+
+names(regout) <- outcomes
 
 n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
   mutate(coefs = c("control",
@@ -334,9 +377,11 @@ n_countries <- lapply(unique(hesitant$country), function(i)
 
 n_combined <- bind_rows(list(n_all, n_countries))
 
-regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
+regout <- lapply(outcomes, function(y) left_join(regout[[y]], n_combined, by = c('coefs', 'country', 'any_info_treatment')))
 
-atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
+names(regout) <- outcomes
+
+atebp <- ggplot(data = regout[['hesitancy_post_rec']], aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2), size=0.7) +
   coord_cartesian(ylim=c(2.75, 3.7)) +
@@ -357,93 +402,7 @@ dev.off()
 
 ## Panel B
 
-hesitant <- hesitancy %>%
-  filter(sample_causal == 1) %>%
-  filter(speeder != 1)
-
-hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
-                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
-
-hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
-
-fig_all <- felm(hesitancy_dummy_post ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment,
-                cmethod = 'reghdfe')
-
-fig_countries <- lapply(unique(hesitant$country), function(i)
-  felm(hesitancy_dummy_post ~
-         factor(any_info_treatment) +
-         std_months_pre | factor(fixed_effects),
-       data = hesitant,
-       weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
-       cmethod = 'reghdfe', subset = (country==i))       
-)
-
-fig <- list(fig_all,
-            fig_countries[[1]],
-            fig_countries[[2]],
-            fig_countries[[3]],
-            fig_countries[[4]],
-            fig_countries[[5]],
-            fig_countries[[6]])
-
-treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
-names(treatment) <- c("coefs", "hesitancy_dummy_post", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
-treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
-treatment$hesitancy_dummy_post <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
-treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
-treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
-treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
-treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
-treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
-treatment$any_info_treatment <- rep(1, length(fig))
-treatment$country <- c("All", unique(hesitant$country))
-
-control_all <- mean(na.omit(hesitant$hesitancy_dummy_post[hesitant$any_info_treatment==0]))
-names(control_all) <- "All"
-control_countries <- sapply(unique(hesitant$country), function(i)
-  mean(subset(hesitant, country == i)$hesitancy_dummy_post[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
-)
-
-control <- data.frame(c(control_all, control_countries))
-names(control) <- "hesitancy_dummy_post"
-control$country <- rownames(control)
-rownames(control) <- NULL
-control$any_info_treatment <- rep(0, length(fig))
-control$coefs <- rep("control", length(fig))
-
-treatment$coefplus <- control$hesitancy_dummy_post + treatment$hesitancy_dummy_post
-control$coefplus <- control$hesitancy_dummy_post
-
-regout <- rbind.fill(treatment, control)
-
-n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
-  mutate(coefs = c("control",
-                   "factor(any_info_treatment)1")) %>%
-  mutate(ntext = paste0('n=', n)) %>%
-  mutate(country = "All") %>%
-  mutate(any_info_treatment = as.numeric(any_info_treatment))
-
-n_countries <- lapply(unique(hesitant$country), function(i)
-  hesitant %>% 
-    filter(country == i) %>%
-    group_by(any_info_treatment) %>% 
-    summarise(n = n()) %>%
-    mutate(coefs = c("control",
-                     "factor(any_info_treatment)1")) %>% 
-    mutate(ntext = paste0('n=', n)) %>%
-    mutate(country = i) %>%
-    mutate(any_info_treatment = as.numeric(any_info_treatment))
-)
-
-n_combined <- bind_rows(list(n_all, n_countries))
-
-regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
-
-atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
+atebp <- ggplot(data = regout[['hesitancy_dummy_post']], aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2)) +
   coord_cartesian(ylim=c(0.3, 0.65)) +
@@ -457,99 +416,14 @@ atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
         axis.text = element_text(size=13))
 
 print(atebp)
+
 pdf(file="Tables and Figures/Figure4_B.pdf")
 print(atebp)
 dev.off()
 
 ## Panel C
 
-hesitant <- hesitancy %>%
-  filter(sample_causal == 1) %>%
-  filter(speeder != 1)
-
-hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
-                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
-
-hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
-
-fig_all <- felm(quickly_post_1_text_reversed2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment,
-                cmethod = 'reghdfe')
-
-fig_countries <- lapply(unique(hesitant$country), function(i)
-  felm(quickly_post_1_text_reversed2 ~
-         factor(any_info_treatment) +
-         std_months_pre | factor(fixed_effects),
-       data = hesitant,
-       weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
-       cmethod = 'reghdfe', subset = (country==i))       
-)
-
-fig <- list(fig_all,
-            fig_countries[[1]],
-            fig_countries[[2]],
-            fig_countries[[3]],
-            fig_countries[[4]],
-            fig_countries[[5]],
-            fig_countries[[6]])
-
-treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
-names(treatment) <- c("coefs", "quickly_post_1_text_reversed2", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
-treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
-treatment$quickly_post_1_text_reversed2 <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
-treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
-treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
-treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
-treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
-treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
-treatment$any_info_treatment <- rep(1, length(fig))
-treatment$country <- c("All", unique(hesitant$country))
-
-control_all <- mean(na.omit(hesitant$quickly_post_1_text_reversed2[hesitant$any_info_treatment==0]))
-names(control_all) <- "All"
-control_countries <- sapply(unique(hesitant$country), function(i)
-  mean(subset(hesitant, country == i)$quickly_post_1_text_reversed2[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
-)
-
-control <- data.frame(c(control_all, control_countries))
-names(control) <- "quickly_post_1_text_reversed2"
-control$country <- rownames(control)
-rownames(control) <- NULL
-control$any_info_treatment <- rep(0, length(fig))
-control$coefs <- rep("control", length(fig))
-
-treatment$coefplus <- control$quickly_post_1_text_reversed2 + treatment$quickly_post_1_text_reversed2
-control$coefplus <- control$quickly_post_1_text_reversed2
-
-regout <- rbind.fill(treatment, control)
-
-n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
-  mutate(coefs = c("control",
-                   "factor(any_info_treatment)1")) %>%
-  mutate(ntext = paste0('n=', n)) %>%
-  mutate(country = "All") %>%
-  mutate(any_info_treatment = as.numeric(any_info_treatment))
-
-n_countries <- lapply(unique(hesitant$country), function(i)
-  hesitant %>% 
-    filter(country == i) %>%
-    group_by(any_info_treatment) %>% 
-    summarise(n = n()) %>%
-    mutate(coefs = c("control",
-                     "factor(any_info_treatment)1")) %>% 
-    mutate(ntext = paste0('n=', n)) %>%
-    mutate(country = i) %>%
-    mutate(any_info_treatment = as.numeric(any_info_treatment))
-)
-
-n_combined <- bind_rows(list(n_all, n_countries))
-
-regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
-
-atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
+atebp <- ggplot(data = regout[['quickly_post_1_text_reversed2']], aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2)) +
   coord_cartesian(ylim=c(4.5, 8)) +
@@ -572,93 +446,7 @@ dev.off()
 
 ## Panel D
 
-hesitant <- hesitancy %>%
-  filter(sample_causal == 1) %>%
-  filter(speeder != 1)
-
-hesitant$country <-  recode(hesitant$country, 'Argentina'='Argentina', 'Brasil'='Brazil', 'Chile'='Chile', 
-                            'Colombia'='Colombia', 'México'='Mexico', 'Perú'='Peru')
-
-hesitant <- hesitant %>% filter(!is.na(any_info_treatment))
-
-fig_all <- felm(encourage2 ~
-                  factor(any_info_treatment) +
-                  std_months_pre | factor(fixed_effects),
-                data = hesitant,
-                weights = hesitant$IPW_any_info_treatment,
-                cmethod = 'reghdfe')
-
-fig_countries <- lapply(unique(hesitant$country), function(i)
-  felm(encourage2 ~
-         factor(any_info_treatment) +
-         std_months_pre | factor(fixed_effects),
-       data = hesitant,
-       weights = hesitant$IPW_any_info_treatment[hesitant$country==i],
-       cmethod = 'reghdfe', subset = (country==i))       
-)
-
-fig <- list(fig_all,
-            fig_countries[[1]],
-            fig_countries[[2]],
-            fig_countries[[3]],
-            fig_countries[[4]],
-            fig_countries[[5]],
-            fig_countries[[6]])
-
-treatment <- as.data.frame(matrix(NA, nrow = length(fig), ncol = 10))
-names(treatment) <- c("coefs", "encourage2", "rse", "lower_ci", "higher_ci", "pval", "pvaltext", "coefplus", "any_info_treatment", "country")
-treatment$coefs <- rep("factor(any_info_treatment)1", length(fig))
-treatment$encourage2 <- sapply(fig, function(i) coef(i))['factor(any_info_treatment)1',]
-treatment$rse <- sapply(1:length(fig), function(i) fig[[i]]$rse['factor(any_info_treatment)1'])
-treatment$lower_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['2.5 %'])
-treatment$higher_ci <- sapply(1:length(fig), function(i) confint(fig[[i]], level = 0.95)['factor(any_info_treatment)1',]['97.5 %'])
-treatment$pval <- sapply(1:length(fig), function(i) fig[[i]]$rpval['factor(any_info_treatment)1'])
-treatment$pvaltext <- ifelse(treatment$pval < 0.01, 'p < 0.01', paste('p = ', round(treatment$pval, 2)))
-treatment$any_info_treatment <- rep(1, length(fig))
-treatment$country <- c("All", unique(hesitant$country))
-
-control_all <- mean(na.omit(hesitant$encourage2[hesitant$any_info_treatment==0]))
-names(control_all) <- "All"
-control_countries <- sapply(unique(hesitant$country), function(i)
-  mean(subset(hesitant, country == i)$encourage2[subset(hesitant, country == i)$any_info_treatment==0], na.rm = TRUE)
-)
-
-control <- data.frame(c(control_all, control_countries))
-names(control) <- "encourage2"
-control$country <- rownames(control)
-rownames(control) <- NULL
-control$any_info_treatment <- rep(0, length(fig))
-control$coefs <- rep("control", length(fig))
-
-treatment$coefplus <- control$encourage2 + treatment$encourage2
-control$coefplus <- control$encourage2
-
-regout <- rbind.fill(treatment, control)
-
-n_all <- hesitant %>% group_by(any_info_treatment) %>% summarise(n = n()) %>%
-  mutate(coefs = c("control",
-                   "factor(any_info_treatment)1")) %>%
-  mutate(ntext = paste0('n=', n)) %>%
-  mutate(country = "All") %>%
-  mutate(any_info_treatment = as.numeric(any_info_treatment))
-
-n_countries <- lapply(unique(hesitant$country), function(i)
-  hesitant %>% 
-    filter(country == i) %>%
-    group_by(any_info_treatment) %>% 
-    summarise(n = n()) %>%
-    mutate(coefs = c("control",
-                     "factor(any_info_treatment)1")) %>% 
-    mutate(ntext = paste0('n=', n)) %>%
-    mutate(country = i) %>%
-    mutate(any_info_treatment = as.numeric(any_info_treatment))
-)
-
-n_combined <- bind_rows(list(n_all, n_countries))
-
-regout <- left_join(regout, n_combined, by = c('coefs', 'country', 'any_info_treatment'))
-
-atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
+atebp <-  ggplot(data = regout[['encourage2']], aes(x = country, y=coefplus, fill=coefs)) +
   geom_bar(position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2)) +
   coord_cartesian(ylim=c(0.3, 0.8)) +
@@ -670,6 +458,8 @@ atebp <-  ggplot(data = regout, aes(x = country, y=coefplus, fill=coefs)) +
   theme(axis.title = element_text(size=15), 
         legend.text = element_text(size = 15), 
         axis.text = element_text(size=13))
+
+print(atebp)
 
 pdf(file="Tables and Figures/Figure4_D.pdf")
 print(atebp)
@@ -1423,7 +1213,6 @@ fig_motiv <- felm(encourage2 ~
                     std_months_pre | factor(fixed_effects),
                   data = hesitant,
                   cmethod = 'reghdfe')
-
 
 coefs <- as.data.frame(fig_motiv$coefficients)
 coefs <- coefs %>% mutate(coefs = coefficients)
