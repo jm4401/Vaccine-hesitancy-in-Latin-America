@@ -1844,6 +1844,152 @@ for (i in 1:length(unique(hesitant_orig$country))) {
 hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
+
+# Table 32
+
+# Robustness to linear coding of encourage others
+
+## Equivalent to Table 3
+
+make_table(treatment = "factor(any_info_treatment)",
+           interaction = NULL,
+           outcome_vars = "encourage_others",
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_any_info_treatment,
+           one_tailed = FALSE,
+           outcome_labels = "Encourage others to vaccinate",
+           treatment_labels = "Any vaccine information",
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table32_anyinfo_pooled_encouragelin"
+)
+
+## Equivalent to Table 4
+
+make_table(treatment = "factor(information_treatment)",
+           interaction = NULL,
+           outcome_vars = "encourage_others",
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_info,
+           one_tailed = FALSE,
+           outcome_labels = "Encourage others to vaccinate",
+           treatment_labels = c("Health",
+                                "Health + herd 60%",
+                                "Health + herd 70%", 
+                                "Health + herd 80%",
+                                "Health + herd 60% + current",
+                                "Health + herd 70% + current",
+                                "Health + herd 80% + current", 
+                                "Health + Biden"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table32_allinfo_pooled_encouragelin"
+)
+
+## Equivalent to Table 5
+
+# indicator for sample restrictions, treatment 2-7
+hesitant <- hesitant %>% mutate(t27 = ifelse(information_treatment >= 2 & 
+                                               information_treatment <= 7, 1, 0))
+
+# restrict sample to treatments 2-7
+hesitant27 <- hesitant %>% filter(t27 == 1)
+
+# indicator for receiving current wtv info
+hesitant27 <- hesitant27 %>% mutate(received_wtv = ifelse(information_treatment >= 5 &
+                                                            information_treatment <= 7, 1, 0))
+
+
+# indicator for whether herd immunity level seen is greater than wtv rate seen
+hesitant27 <- hesitant27 %>% mutate(herd_seen = ifelse(information_treatment==5 | information_treatment==2, 60,
+                                                       ifelse(information_treatment==6 | information_treatment==3, 70, 
+                                                              ifelse(information_treatment==7 | information_treatment==4, 80, 0))))
+
+hesitant27 <- hesitant27 %>% mutate(herd_above_wtv = ifelse(herd_seen > current_willingness, 1, 0))
+
+# current willingness indicators
+hesitant27 <- hesitant27 %>% mutate(current_56 = ifelse(current_willingness==56, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_57 = ifelse(current_willingness==57, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_58 = ifelse(current_willingness==58, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_61 = ifelse(current_willingness==61, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_64 = ifelse(current_willingness==64, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_66 = ifelse(current_willingness==66, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_67 = ifelse(current_willingness==67, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_73 = ifelse(current_willingness==73, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_75 = ifelse(current_willingness==75, 1, 0))
+hesitant27 <- hesitant27 %>% mutate(current_79 = ifelse(current_willingness==79, 1, 0))
+
+# demean the first 9 indicators by subtracting the mean of the corresponding indicator in the sample that we will use for estimation
+hesitant27 <- hesitant27 %>% mutate(d_current_56 = (current_56 - mean(current_56)))
+hesitant27 <- hesitant27 %>% mutate(d_current_57 = (current_57 - mean(current_57)))
+hesitant27 <- hesitant27 %>% mutate(d_current_58 = (current_58 - mean(current_58)))
+hesitant27 <- hesitant27 %>% mutate(d_current_61 = (current_61 - mean(current_61)))
+hesitant27 <- hesitant27 %>% mutate(d_current_64 = (current_64 - mean(current_64)))
+hesitant27 <- hesitant27 %>% mutate(d_current_66 = (current_66 - mean(current_66)))
+hesitant27 <- hesitant27 %>% mutate(d_current_67 = (current_67 - mean(current_67)))
+hesitant27 <- hesitant27 %>% mutate(d_current_73 = (current_73 - mean(current_73)))
+hesitant27 <- hesitant27 %>% mutate(d_current_75 = (current_75 - mean(current_75)))
+
+outcomes <- "encourage_others"
+
+models <- lapply(outcomes, function(y)
+  lm_robust(as.formula(paste0(y, " ~ received_wtv + herd_above_wtv + received_wtv*herd_above_wtv + factor(current_willingness) + received_wtv*d_current_56 + received_wtv*d_current_57 + received_wtv*d_current_58 + received_wtv*d_current_61 + received_wtv*d_current_64 + received_wtv*d_current_66 + received_wtv*d_current_67 + received_wtv*d_current_73 + received_wtv*d_current_75 + std_months_pre")),
+            fixed_effects = factor(fixed_effects),
+            data = hesitant27,
+            se_type = "stata")
+)
+
+outcome_stats <- hesitant27 %>%
+  filter(received_wtv == 0 & herd_above_wtv == 0) %>%
+  dplyr::summarize(across(
+    all_of(outcomes),
+    .fns = list(Mean = ~mean(., na.rm = TRUE),
+                SD = ~sd(., na.rm = TRUE))))
+
+observations <- sapply(1:length(outcomes), function(y)
+  format(nobs(models[[y]]), big.mark = ","))
+
+rsq <- sapply(1:length(outcomes), function(y)
+  round(models[[y]]$r.squared, 3)
+)
+
+texreg(models,
+       include.ci = FALSE,
+       file = paste0("Tables and Figures/SI_table32_currentherdint_encouragelin", ".tex"),
+       caption = NULL,
+       label = paste0("table:", "SI_table32_currentherdint_encouragelin"),
+       stars = c(0.01, 0.05, 0.1),
+       digits = 3,
+       custom.model.names = "Encourage others to vaccinate",
+       custom.coef.names = c("Current", 
+                             "Herd opinion above current rate",
+                             rep("", 19),
+                             "Current $\\times$ herd opinion above current rate",
+                             rep("", 9)),
+       custom.gof.rows = list("Outcome range" = c("[1,5]", "{0,1}", "[0,12]", "{0,1}"),
+                              "Control outcome mean" = round(as.numeric(outcome_stats[seq(from = 1, to = length(outcome_stats), by = 2)]),2),
+                              "Control outcome std. dev" = round(as.numeric(outcome_stats[seq(from = 2, to = length(outcome_stats), by = 2)]),2),
+                              "Observations" = observations,
+                              "R$^{2}$" = rsq
+       ),
+)
+
+rm(models, outcome_stats, observations, rsq)
+
+## Equivalent to Table 6
+
+make_table(treatment = "factor(motivation_treatment_enc)",
+           interaction = NULL,
+           outcome_vars = "encourage_others",
+           fixed_effects = "factor(fixed_effects)",
+           weights = NULL,
+           one_tailed = FALSE,
+           outcome_labels = "Encourage others to vaccinate",
+           treatment_labels = c("Altruism",
+                                "Economic recovery",
+                                "Social approval"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table32_motiv_encouragelin"
+)
+
 rm(list=setdiff(ls(), c("hesitancy", "make_table")))
 
 ## Fix all tables
