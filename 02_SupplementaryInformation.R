@@ -8,6 +8,7 @@ library(estimatr)
 library(haven)
 library(lfe)
 library(plyr)
+library(readxl)
 library(tidyverse)
 library(texreg)
 library(weights)
@@ -1989,6 +1990,95 @@ make_table(treatment = "factor(motivation_treatment_enc)",
            data = hesitant,
            table_name = "Tables and Figures/SI_table32_motiv_encouragelin"
 )
+
+# Table 33 - Descriptive Stats
+
+full_sample_desc <- hesitancy %>%
+  group_by(country) %>%
+  summarise(
+    pct_age1824         = mean(age_bin_netquest == "18_24", na.rm = TRUE),
+    pct_age2534         = mean(age_bin_netquest == "25_34", na.rm = TRUE),
+    pct_age3544         = mean(age_bin_netquest == "35_44", na.rm = TRUE),
+    pct_age4554         = mean(age_bin_netquest == "45_54", na.rm = TRUE),
+    pct_age5564         = mean(age_bin_netquest == "55_64", na.rm = TRUE),
+    pct_age65plus       = mean(age_bin_netquest == "65_or_above", na.rm = TRUE),
+    pct_women           = mean(sex == 2, na.rm = TRUE),
+    pct_men             = mean(sex == 1, na.rm = TRUE),
+    pct_edu_none        = mean(education == "none", na.rm = TRUE),
+    pct_edu_primary     = mean(education == "primary", na.rm = TRUE),
+    pct_edu_secondary   = mean(education == "secondary", na.rm = TRUE),
+    pct_edu_university  = mean(education == "university", na.rm = TRUE),
+    pct_edu_otherhigher = mean(education == "other_higher", na.rm = TRUE)
+  )
+
+hesitant_sample_desc <- hesitant %>%
+  group_by(country) %>%
+  summarise(
+    pct_age1824         = mean(age_bin_netquest == "18_24", na.rm = TRUE),
+    pct_age2534         = mean(age_bin_netquest == "25_34", na.rm = TRUE),
+    pct_age3544         = mean(age_bin_netquest == "35_44", na.rm = TRUE),
+    pct_age4554         = mean(age_bin_netquest == "45_54", na.rm = TRUE),
+    pct_age5564         = mean(age_bin_netquest == "55_64", na.rm = TRUE),
+    pct_age65plus       = mean(age_bin_netquest == "65_or_above", na.rm = TRUE),
+    pct_women           = mean(sex == 2, na.rm = TRUE),
+    pct_men             = mean(sex == 1, na.rm = TRUE),
+    pct_edu_none        = mean(education == "none", na.rm = TRUE),
+    pct_edu_primary     = mean(education == "primary", na.rm = TRUE),
+    pct_edu_secondary   = mean(education == "secondary", na.rm = TRUE),
+    pct_edu_university  = mean(education == "university", na.rm = TRUE),
+    pct_edu_otherhigher = mean(education == "other_higher", na.rm = TRUE)
+  )
+
+population_desc <- read_excel("Sampling Strategy (from Netquest).xlsx", 
+                              sheet = "Summary")
+
+population_comparisons <- data.frame(unique(hesitancy$country))
+names(population_comparisons) <- "Country"
+
+population_comparisons <- population_comparisons %>%
+  mutate(`Age 18-24 Full Sample`     = full_sample_desc$pct_age1824,
+         `Age 18-24 Hesitant Sample` = hesitant_sample_desc$pct_age1824,
+         `Age 15-24 Population`      = population_desc$pct_age1524,
+         `Age 25-34 Full Sample`     = full_sample_desc$pct_age2534,
+         `Age 25-34 Hesitant Sample` = hesitant_sample_desc$pct_age2534,
+         `Age 25-34 Population`      = population_desc$pct_age2534,
+         `Age 35-44 Full Sample`     = full_sample_desc$pct_age3544,
+         `Age 35-44 Hesitant Sample` = hesitant_sample_desc$pct_age3544,
+         `Age 35-44 Population`      = population_desc$pct_age3544,
+         `Age 45-54 Full Sample`     = full_sample_desc$pct_age4554,
+         `Age 45-54 Hesitant Sample` = hesitant_sample_desc$pct_age4554,
+         `Age 45-54 Population`      = population_desc$pct_age4554,
+         `Age 55-64 Full Sample`     = full_sample_desc$pct_age5564,
+         `Age 55-64 Hesitant Sample` = hesitant_sample_desc$pct_age5564,
+         `Age 55-64 Population`      = population_desc$pct_age5564,
+         `Age 65+   Full Sample`     = full_sample_desc$pct_age65plus,
+         `Age 65+   Hesitant Sample` = hesitant_sample_desc$pct_age65plus,
+         `Age 65+   Population`      = population_desc$pct_age65plus,
+         `Women Full Sample`         = full_sample_desc$pct_women,
+         `Women Hesitant Sample`     = hesitant_sample_desc$pct_women,
+         `Women Population`          = population_desc$pct_women,
+         `Men Full Sample`           = full_sample_desc$pct_men,
+         `Men Hesitant Sample`       = hesitant_sample_desc$pct_men,
+         `Men Population`            = population_desc$pct_men,
+  )
+
+round_and_percent <- function(x) {
+  m <- round(x,2)*100
+  return(paste0(m, sep = "%"))
+}
+
+population_comparisons <- population_comparisons %>% 
+  mutate_if(is.numeric, round, digits = 2)
+
+population_comparisons %>%
+  mutate_if(is.numeric, )
+
+paste(round(100*m, 2), "%", sep="")
+
+
+population_comparisons <- print(xtable(population_comparisons, auto = TRUE), include.rownames = FALSE)
+
+write(population_comparisons, "Tables and Figures/SI_table33_descstats.tex")
 
 rm(list=setdiff(ls(), c("hesitancy", "make_table")))
 
