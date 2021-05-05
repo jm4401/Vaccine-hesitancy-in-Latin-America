@@ -2063,18 +2063,12 @@ population_comparisons <- population_comparisons %>%
   )
 
 round_and_percent <- function(x) {
-  m <- round(x,2)*100
+  m <- round(x,4)*100
   return(paste0(m, sep = "%"))
 }
 
 population_comparisons <- population_comparisons %>% 
-  mutate_if(is.numeric, round, digits = 2)
-
-population_comparisons %>%
-  mutate_if(is.numeric, )
-
-paste(round(100*m, 2), "%", sep="")
-
+  mutate_if(is.numeric, round_and_percent)
 
 population_comparisons <- print(xtable(population_comparisons, auto = TRUE), include.rownames = FALSE)
 
