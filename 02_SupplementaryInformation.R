@@ -1412,6 +1412,144 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
 
+# Supplementary Information Table 21b - effect of any vaccine information on encourage others (linear)
+
+outcomes <- "encourage_others"
+
+outcomes_labels <- "Encourage others to vaccinate"
+
+hesitancy <- read_dta("vaccine_wide.dta")
+
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+## Pooled
+
+make_table(treatment = "factor(any_info_treatment)",
+           interaction = NULL,
+           outcome_vars = outcomes,
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_any_info_treatment,
+           one_tailed = FALSE,
+           outcome_labels = outcomes_labels,
+           treatment_labels = "Any vaccine information",
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table21_anyinfo_pooled_encourage1-4"
+)
+
+## By Country
+
+hesitant_orig <- hesitant
+
+hesitant_orig <- hesitant_orig %>%
+  mutate(country = case_when(
+    country == "Perú" ~ "Peru",
+    country == "México" ~ "Mexico",
+    country == "Chile" ~ "Chile",
+    country == "Colombia" ~ "Colombia",
+    country == "Argentina" ~ "Argentina",
+    country == "Brasil" ~ "Brazil"
+  ))
+
+for (i in 1:length(unique(hesitant_orig$country))) {
+  hesitant <- subset(hesitant_orig, hesitant_orig$country == unique(hesitant_orig$country)[i])
+  
+  make_table(treatment = "factor(any_info_treatment)",
+             interaction = NULL,
+             outcome_vars = outcomes,
+             fixed_effects = "factor(fixed_effects)",
+             weights = hesitant$IPW_any_info_treatment,
+             one_tailed = FALSE,
+             outcome_labels = outcomes_labels,
+             treatment_labels = "Any vaccine information",
+             data = hesitant,
+             table_name = paste0("Tables and Figures/SI_table21_anyinfo_", unique(hesitant_orig$country)[i], "_encourage1-4")
+  )
+}
+
+hesitant <- hesitant_orig
+
+rm(hesitant_orig, i)
+
+# Supplementary Information Table 22b - effect of different types of vaccine information treatment on linear encourage others
+
+make_table(treatment = "factor(information_treatment)",
+           interaction = NULL,
+           outcome_vars = outcomes,
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_info,
+           one_tailed = FALSE,
+           outcome_labels = outcomes_labels,
+           treatment_labels = c("Health",
+                                "Health + herd 60%",
+                                "Health + herd 70%", 
+                                "Health + herd 80%",
+                                "Health + herd 60% + current",
+                                "Health + herd 70% + current",
+                                "Health + herd 80% + current", 
+                                "Health + Biden"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table22_allinfo_pooled_encourage1-4"
+)
+
+# Supplementary Information Table 23b - effect of different types of motivational message on linear encourage others
+
+## Pooled
+
+make_table(treatment = "factor(motivation_treatment_enc)",
+           interaction = NULL,
+           outcome_vars = outcomes,
+           fixed_effects = "factor(fixed_effects)",
+           weights = NULL,
+           one_tailed = FALSE,
+           outcome_labels = outcomes_labels,
+           treatment_labels = c("Altruism",
+                                "Economic recovery",
+                                "Social approval"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table23_motiv_encourage1-4_pooled"
+)
+
+## By Country
+
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
+hesitant_orig <- hesitant
+
+hesitant_orig <- hesitant_orig %>%
+  mutate(country = case_when(
+    country == "Perú" ~ "Peru",
+    country == "México" ~ "Mexico",
+    country == "Chile" ~ "Chile",
+    country == "Colombia" ~ "Colombia",
+    country == "Argentina" ~ "Argentina",
+    country == "Brasil" ~ "Brazil"
+  ))
+
+for (i in 1:length(unique(hesitant_orig$country))) {
+  hesitant <- subset(hesitant_orig, hesitant_orig$country == unique(hesitant_orig$country)[i])
+  
+  make_table(treatment = "factor(motivation_treatment_enc)",
+             interaction = NULL,
+             outcome_vars = outcomes,
+             fixed_effects = "factor(fixed_effects)",
+             weights = NULL,
+             one_tailed = FALSE,
+             outcome_labels = outcomes_labels,
+             treatment_labels = c("Altruism",
+                                  "Economic recovery",
+                                  "Social approval"),
+             data = hesitant,
+             table_name = paste0("Tables and Figures/SI_table23_motiv_", unique(hesitant_orig$country)[i], "_encourage1-4")
+  )
+}
+
+hesitant <- hesitant_orig
+
+rm(hesitant_orig, i)
+
 # Weighted Tables - Joint Weights
 
 rm(list=setdiff(ls(), "make_table"))
