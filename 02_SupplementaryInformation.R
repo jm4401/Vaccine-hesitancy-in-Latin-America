@@ -1271,9 +1271,9 @@ make_table(treatment = "factor(motivation_treatment_enc)",
 
 # Supplementary Information Table 21 - effect of any vaccine information on demand for further vaccine information
 
-outcomes <- c("want_more_info", "clicked", "encourage_others")
+outcomes <- c("want_more_info", "clicked")
 
-outcomes_labels <- c("Request more information", "Visited PAHO website", "Encourage others to get vaccinated")
+outcomes_labels <- c("Request more information", "Visited PAHO website")
 
 hesitancy <- read_dta("vaccine_wide.dta")
 
