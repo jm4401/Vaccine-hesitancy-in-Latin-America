@@ -382,11 +382,12 @@ regout <- lapply(outcomes, function(y) left_join(regout[[y]], n_combined, by = c
 names(regout) <- outcomes
 
 atebp <- ggplot(data = regout[['hesitancy_post_rec']], aes(x = country, y=coefplus, fill=coefs)) +
-  geom_bar(position="dodge", color = 'black', stat="identity") +
+  geom_bar(width = 0.8, position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2), size=0.7) +
   coord_cartesian(ylim=c(2.75, 3.7)) +
   ylab("Vaccine willingness (strongly disagree - strongly agree)") +
   xlab(" ") +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
   theme(legend.position="bottom", legend.title = element_blank()) +
   scale_fill_brewer(palette="Blues", labels = c("Control", "Any vaccine information")) +
   geom_text(aes(label=pvaltext, y=coefplus + (rse*1.95)), vjust=-1, position = position_dodge(0.9)) +
@@ -403,11 +404,12 @@ dev.off()
 ## Panel B
 
 atebp <- ggplot(data = regout[['hesitancy_dummy_post']], aes(x = country, y=coefplus, fill=coefs)) +
-  geom_bar(position="dodge", color = 'black', stat="identity") +
+  geom_bar(width = 0.8, position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2)) +
   coord_cartesian(ylim=c(0.3, 0.65)) +
-  ylab("Share willing to vaccinate") +
+  ylab("Willing to vaccinate") +
   xlab(" ") +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
   theme(legend.position="bottom", legend.title = element_blank()) +
   scale_fill_brewer(palette="Blues", labels = c("Control", "Any vaccine information")) +
   geom_text(aes(label=pvaltext, y=coefplus + (rse*1.95)), vjust=-1, position = position_dodge(0.9)) +
@@ -424,11 +426,12 @@ dev.off()
 ## Panel C
 
 atebp <- ggplot(data = regout[['quickly_post_1_text_reversed2']], aes(x = country, y=coefplus, fill=coefs)) +
-  geom_bar(position="dodge", color = 'black', stat="identity") +
+  geom_bar(width = 0.8, position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2)) +
   coord_cartesian(ylim=c(4.5, 8)) +
   ylab("Months would wait to get vaccinated once eligible") +
   xlab(" ") +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
   scale_y_continuous(breaks = c(5,  6,  7),
                      labels = c("6", "5",  "4")) +
   theme(legend.position="bottom", legend.title = element_blank()) +
@@ -447,11 +450,12 @@ dev.off()
 ## Panel D
 
 atebp <-  ggplot(data = regout[['encourage2']], aes(x = country, y=coefplus, fill=coefs)) +
-  geom_bar(position="dodge", color = 'black', stat="identity") +
+  geom_bar(width = 0.8, position="dodge", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, position = position_nudge(x = 0.2)) +
   coord_cartesian(ylim=c(0.3, 0.8)) +
-  ylab("Share likely to encourage others to get vaccinated") +
+  ylab("Likely to encourage others to get vaccinated") +
   xlab("") +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
   theme(legend.position="bottom", legend.title = element_blank()) +
   scale_fill_brewer(palette="Blues", labels = c("Control", "Any vaccine information")) +
   geom_text(aes(label=pvaltext, y=coefplus + (rse*1.95)), vjust=-1, position = position_dodge(0.9)) +
@@ -611,7 +615,7 @@ regout <- merge(regout, n, by=c('coefs'))
 atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=information_treatment)) +
   geom_bar(position="stack", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, size=0.71) +
-  ylab("Share willing to vaccinate") +
+  ylab("Willing to vaccinate") +
   xlab("") +
   theme(legend.position="bottom", legend.title = element_blank()) +
   coord_cartesian(ylim=c(0.3, .55)) +
@@ -777,7 +781,7 @@ regout <- merge(regout, n, by=c('coefs'))
 atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=information_treatment)) +
   geom_bar(position="stack", color = 'black', stat="identity") +
   geom_errorbar(aes(ymin = coefplus-abs(1.96*rse), ymax = coefplus+abs(1.96*rse)), width=0.2, size=0.71) +
-  ylab("Share likely to encourage others to get vaccinated") +
+  ylab("Likely to encourage others to get vaccinated") +
   xlab("") +
   theme(legend.position="bottom", legend.title = element_blank()) +
   coord_cartesian(ylim=c(0.5, .67)) +
