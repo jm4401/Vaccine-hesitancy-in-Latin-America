@@ -375,7 +375,10 @@ n_countries <- lapply(unique(hesitant$country), function(i)
     mutate(any_info_treatment = as.numeric(any_info_treatment))
 )
 
-n_combined <- bind_rows(list(n_all, n_countries))
+n_combined <- bind_rows(list(n_all, n_countries)) %>%
+  group_by(country) %>%
+  mutate(n_total = sum(n)) %>%
+  mutate(n_total_text = paste0("n=", n_total))
 
 regout <- lapply(outcomes, function(y) left_join(regout[[y]], n_combined, by = c('coefs', 'country', 'any_info_treatment')))
 
@@ -387,7 +390,7 @@ atebp <- ggplot(data = regout[['hesitancy_post_rec']], aes(x = country, y=coefpl
   coord_cartesian(ylim=c(2.75, 3.7)) +
   ylab("Vaccine willingness (strongly disagree - strongly agree)") +
   xlab(" ") +
-  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$n_total_text)) +
   theme(legend.position="bottom", legend.title = element_blank()) +
   scale_fill_brewer(palette="Blues", labels = c("Control", "Any vaccine information")) +
   geom_text(aes(label=pvaltext, y=coefplus + (rse*1.95)), vjust=-1, position = position_dodge(0.9)) +
@@ -409,7 +412,7 @@ atebp <- ggplot(data = regout[['hesitancy_dummy_post']], aes(x = country, y=coef
   coord_cartesian(ylim=c(0.3, 0.65)) +
   ylab("Willing to vaccinate") +
   xlab(" ") +
-  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$n_total_text)) +
   theme(legend.position="bottom", legend.title = element_blank()) +
   scale_fill_brewer(palette="Blues", labels = c("Control", "Any vaccine information")) +
   geom_text(aes(label=pvaltext, y=coefplus + (rse*1.95)), vjust=-1, position = position_dodge(0.9)) +
@@ -431,7 +434,7 @@ atebp <- ggplot(data = regout[['quickly_post_1_text_reversed2']], aes(x = countr
   coord_cartesian(ylim=c(4.5, 8)) +
   ylab("Months would wait to get vaccinated once eligible") +
   xlab(" ") +
-  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$n_total_text)) +
   scale_y_continuous(breaks = c(5,  6,  7),
                      labels = c("6", "5",  "4")) +
   theme(legend.position="bottom", legend.title = element_blank()) +
@@ -455,7 +458,7 @@ atebp <-  ggplot(data = regout[['encourage2']], aes(x = country, y=coefplus, fil
   coord_cartesian(ylim=c(0.3, 0.8)) +
   ylab("Likely to encourage others to get vaccinated") +
   xlab("") +
-  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$ntext)) +
+  scale_x_discrete(labels = paste(regout[['hesitancy_post_rec']]$country, "\n", regout[['hesitancy_post_rec']]$n_total_text)) +
   theme(legend.position="bottom", legend.title = element_blank()) +
   scale_fill_brewer(palette="Blues", labels = c("Control", "Any vaccine information")) +
   geom_text(aes(label=pvaltext, y=coefplus + (rse*1.95)), vjust=-1, position = position_dodge(0.9)) +
