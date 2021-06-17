@@ -890,6 +890,42 @@ rm(df, dv_reasons)
 
 # Supplementary Information Table 15 - effect of any vaccine information on vaccine willingness, by pre-treatment covariate
 
+## recode NSE data
+
+hesitancy <- hesitancy %>% mutate(nse = NA)
+hesitancy$nse[hesitancy$ses_survey_all %in% c(121) & hesitancy$country=='Argentina'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(331, 630, 632) & hesitancy$country=='Argentina'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(343) & hesitancy$country=='Argentina'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(76, 133) & hesitancy$country=='Brasil'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(458, 602, 791) & hesitancy$country=='Brasil'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(818) & hesitancy$country=='Brasil'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(32, 152) & hesitancy$country=='Chile'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(153, 241, 489, 222) & hesitancy$country=='Chile'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(625) & hesitancy$country=='Chile'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(83, 134) & hesitancy$country=='Colombia'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(231, 2, 580) & hesitancy$country=='Colombia'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(662, 320) & hesitancy$country=='Colombia'] <- 'low'
+
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(59, 155, 236) & hesitancy$country=='México'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(245, 330, 374) & hesitancy$country=='México'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(702) & hesitancy$country=='México'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(24, 87, 19) & hesitancy$country=='Perú'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(228, 471, 292) & hesitancy$country=='Perú'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(467, 613) & hesitancy$country=='Perú'] <- 'low'
+
+hesitant$nse <- factor(hesitant$nse, levels=c('low', 'middle', 'high'))
+
+nselevels <- c("Low", "Middle", "High")
+
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
 hesitant <- hesitant %>% mutate(vote_president_rec = ifelse(vote_president != 1, 0, 1))
 
 outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text_reversed2", "encourage2")
@@ -897,13 +933,13 @@ outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text
 outcomes_labels <- c("Willing to vaccinate scale", "Willing to vaccinate", "Wait until vaccinate (reversed)", "Encourage others to vaccinate")
 
 make_table(treatment = "factor(any_info_treatment)",
-           interaction = "factor(any_info_treatment)*sex + factor(any_info_treatment)*factor(age_bin) + factor(any_info_treatment)*nse + factor(any_info_treatment)*vote_president_rec + factor(any_info_treatment)*factor(education_enc)",
+           interaction = "factor(any_info_treatment)*sex + factor(any_info_treatment)*factor(age_bin) + factor(any_info_treatment)*factor(nse) + factor(any_info_treatment)*vote_president_rec + factor(any_info_treatment)*factor(education_enc)",
            outcome_vars = outcomes,
            fixed_effects = "factor(fixed_effects)",
            weights = hesitant$IPW_any_info_treatment,
            one_tailed = FALSE,
            outcome_labels = outcomes_labels,
-           treatment_labels = c("Any vaccine information", "Woman", "Age, 25-34", "Age, 35-44", "Age, 45-54", "Age, 55-64", "Age, 65+", "Socioeconomic Class", "Would vote for president", "Primary education", "Secondary education", "Other higher education", "University education", "Any vaccine information $\\times$ woman", "Any vaccine information $\\times$ age, 25-34", "Any vaccine information $\\times$ age, 35-44", "Any vaccine information $\\times$ age, 45-54", "Any vaccine information $\\times$ age, 55-64", "Any vaccine information $\\times$ age, 65+", "Any vaccine information $\\times$ socioeconomic class", "Any vaccine information $\\times$ would vote for president", "Any vaccine information $\\times$ primary education", "Any vaccine information $\\times$ secondary education", "Any vaccine information $\\times$ other higher education", "Any vaccine information $\\times$ university"),
+           treatment_labels = c("Any vaccine information", "Woman", "Age, 25-34", "Age, 35-44", "Age, 45-54", "Age, 55-64", "Age, 65+", "Middle SES", "High SES", "Would vote for president", "Primary education", "Secondary education", "Other higher education", "University education", "Any vaccine information $\\times$ woman", "Any vaccine information $\\times$ age, 25-34", "Any vaccine information $\\times$ age, 35-44", "Any vaccine information $\\times$ age, 45-54", "Any vaccine information $\\times$ age, 55-64", "Any vaccine information $\\times$ age, 65+", "Any vaccine information $\\times$ Middle SES", "Any vaccine information $\\times$ High SES", "Any vaccine information $\\times$ would vote for president", "Any vaccine information $\\times$ primary education", "Any vaccine information $\\times$ secondary education", "Any vaccine information $\\times$ other higher education", "Any vaccine information $\\times$ university"),
            data = hesitant,
            table_name = "Tables and Figures/SI_table15_allhet_anyinfo"
 )
@@ -1218,7 +1254,7 @@ outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text
 outcomes_labels <- c("Willing to vaccinate scale", "Willing to vaccinate", "Wait until vaccinate (reversed)", "Encourage others to vaccinate")
 
 make_table(treatment = "factor(motivation_treatment_enc)",
-           interaction = "factor(motivation_treatment_enc)*sex + factor(motivation_treatment_enc)*age_bin + factor(motivation_treatment_enc)*nse + factor(motivation_treatment_enc)*vote_president_rec + factor(motivation_treatment_enc)*factor(education_enc)",
+           interaction = "factor(motivation_treatment_enc)*sex + factor(motivation_treatment_enc)*age_bin + factor(motivation_treatment_enc)*factor(nse) + factor(motivation_treatment_enc)*vote_president_rec + factor(motivation_treatment_enc)*factor(education_enc)",
            outcome_vars = outcomes,
            weights = NULL,
            fixed_effects = "factor(fixed_effects)",
@@ -1227,7 +1263,8 @@ make_table(treatment = "factor(motivation_treatment_enc)",
            treatment_labels = c("Altruism", "Economic recovery", "Social Approval",
                                 "Woman",
                                 "Age, 25-34", "Age, 35-44", "Age, 45-54", "Age, 55-64", "Age, 65+",
-                                "Socioeconomic Class",
+                                "Middle SES",
+                                "High SES",
                                 "Would vote for president",
                                 "Primary education",
                                 "Secondary education",
@@ -1239,7 +1276,8 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Altruism $\\times$ age, 45-54", "Economic recovery $\\times$ age, 45-54", "Social status $\\times$ age, 45-54",
                                 "Altruism $\\times$ age, 55-64", "Economic recovery $\\times$ age, 55-64", "Social status $\\times$ age, 55-64",
                                 "Altruism $\\times$ age, 65+", "Economic recovery $\\times$ age, 65+", "Social status $\\times$ age, 65+",
-                                "Altruism $\\times$ socioeconomic class", "Economic recovery $\\times$ socioeconomic class", "Social status $\\times$ socioeconomic class",
+                                "Altruism $\\times$ Middle SES", "Economic recovery $\\times$ Middle SES", "Social status $\\times$ Middle SES",
+                                "Altruism $\\times$ High SES", "Economic recovery $\\times$ High SES", "Social status $\\times$ High SES",
                                 "Altruism $\\times$ would vote for President", "Economic recovery $\\times$ would vote for President", "Social status $\\times$ would vote for President",
                                 "Altruism $\\times$ primary education", "Economic recovery $\\times$ primary education", "Social status $\\times$ primary education",
                                 "Altruism $\\times$ secondary education", "Economic recovery $\\times$ secondary education", "Social status $\\times$ secondary education",
