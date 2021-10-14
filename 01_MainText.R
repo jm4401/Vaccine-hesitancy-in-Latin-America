@@ -515,7 +515,7 @@ regout <- regout %>% filter(coefs != 'std_months_pre')
 
 pval <- as.data.frame(round(fig_dummy_m$rpval, 2))
 pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_dummy_m$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_dummy_m$rpval, 2)`)))
+pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_dummy_m$rpval, 2)`<0.01, 'p < 0.01', paste('p =', pval$`round(fig_dummy_m$rpval, 2)`)))
 
 regout <- merge(regout, pval, by=c('coefs'))
 
@@ -934,8 +934,8 @@ pval_int <- round(pval_int, 2)
 regout <- regout %>% mutate(pval = NA)
 regout$pval[regout$interaction==0] <- pval_main
 regout$pval[regout$interaction==1] <- pval_int
-regout <- regout %>% mutate(pvaltext = ifelse(pval < 0.01, "p<0.01", 
-                                              paste0("p=", pval)))
+regout <- regout %>% mutate(pvaltext = ifelse(pval < 0.01, "p < 0.01", 
+                                              paste0("p = ", pval)))
 
 regout$interaction[regout$interaction==0] <- c("Current > Herd")
 regout$interaction[regout$interaction==1] <- c("Current <= Herd")
@@ -1024,7 +1024,7 @@ colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
 regout <- regout %>% filter(coefs != 'std_months_pre')
 pval <- as.data.frame(round(fig_motiv$rpval, 2))
 pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_motiv$rpval, 2)`)))
+pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p < 0.01', paste('p =', pval$`round(fig_motiv$rpval, 2)`)))
 regout <- merge(regout, pval, by=c('coefs'))
 
 
@@ -1094,7 +1094,7 @@ colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
 regout <- regout %>% filter(coefs != 'std_months_pre')
 pval <- as.data.frame(round(fig_motiv$rpval, 2))
 pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_motiv$rpval, 2)`)))
+pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p < 0.01', paste('p =', pval$`round(fig_motiv$rpval, 2)`)))
 regout <- merge(regout, pval, by=c('coefs'))
 
 
@@ -1164,7 +1164,7 @@ colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
 regout <- regout %>% filter(coefs != 'std_months_pre')
 pval <- as.data.frame(round(fig_motiv$rpval, 2))
 pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_motiv$rpval, 2)`)))
+pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p < 0.01', paste('p =', pval$`round(fig_motiv$rpval, 2)`)))
 regout <- merge(regout, pval, by=c('coefs'))
 
 
@@ -1236,7 +1236,7 @@ colnames(regout)[4:5] <- c('lower_ci', 'higher_ci')
 regout <- regout %>% filter(coefs != 'std_months_pre')
 pval <- as.data.frame(round(fig_motiv$rpval, 2))
 pval <- pval %>% mutate(coefs = coefficients)
-pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p<0.01', paste('p=', pval$`round(fig_motiv$rpval, 2)`)))
+pval <- pval %>% mutate(pvaltext = ifelse(pval$`round(fig_motiv$rpval, 2)`<0.01, 'p < 0.01', paste('p =', pval$`round(fig_motiv$rpval, 2)`)))
 regout <- merge(regout, pval, by=c('coefs'))
 
 
