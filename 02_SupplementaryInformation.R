@@ -19,9 +19,154 @@ hesitancy <- read_dta("vaccine_wide.dta")
 
 source("00_table_function.R")
 
-# Supplementary Information Table 1 - made manually
+# Supplementary Information Table 1 - descriptive stats
 
-# Supplementary Information Table 2 - vaccine information comprehension tests
+full_sample_desc <- hesitancy %>%
+  filter(age >= 18) %>%
+  mutate(age = as.numeric(substr(age_years, nchar(age_years)-2+1, nchar(age_years)))) %>%
+  mutate(gender_rec = case_when(
+    gender == 1 ~ 0,
+    gender == 2 ~ 1
+  )) %>%
+  group_by(country) %>%
+  dplyr::summarize(age = mean(age, na.rm = TRUE),
+                   male = mean(gender_rec, na.rm = TRUE))
+
+hesitancy <- hesitancy %>% mutate(nse = NA)
+hesitancy$nse[hesitancy$ses_survey_all %in% c(121) & hesitancy$country=='Argentina'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(331, 630, 632) & hesitancy$country=='Argentina'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(343) & hesitancy$country=='Argentina'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(76, 133) & hesitancy$country=='Brasil'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(458, 602, 791) & hesitancy$country=='Brasil'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(818) & hesitancy$country=='Brasil'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(32, 152) & hesitancy$country=='Chile'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(153, 241, 489, 222) & hesitancy$country=='Chile'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(625) & hesitancy$country=='Chile'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(83, 134) & hesitancy$country=='Colombia'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(231, 2, 580) & hesitancy$country=='Colombia'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(662, 320) & hesitancy$country=='Colombia'] <- 'low'
+
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(59, 155, 236) & hesitancy$country=='México'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(245, 330, 374) & hesitancy$country=='México'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(702) & hesitancy$country=='México'] <- 'low'
+
+hesitancy$nse[hesitancy$ses_survey_all %in% c(24, 87, 19) & hesitancy$country=='Perú'] <- 'high'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(228, 471, 292) & hesitancy$country=='Perú'] <- 'middle'
+hesitancy$nse[hesitancy$ses_survey_all %in% c(467, 613) & hesitancy$country=='Perú'] <- 'low'
+
+hesitancy$nse <- factor(hesitancy$nse, levels=c('low', 'middle', 'high'))
+
+hesitancy$nse_low <- ifelse(hesitancy$nse == "low", 1, 0)
+hesitancy$nse_mid <- ifelse(hesitancy$nse == "middle", 1, 0)
+hesitancy$nse_high <- ifelse(hesitancy$nse == "high", 1, 0)
+
+full_sample_desc_ses <- hesitancy %>%
+  group_by(country) %>%
+  dplyr::summarize(ses_low = mean(nse_low, na.rm = TRUE),
+                   ses_mid = mean(nse_mid, na.rm = TRUE),
+                   ses_high = mean(nse_high, na.rm = TRUE))
+
+full_sample_desc <- left_join(full_sample_desc, full_sample_desc_ses)
+
+hesitancy$edu_none         <- ifelse(hesitancy$education == "none", 1, 0)
+hesitancy$edu_primary      <- ifelse(hesitancy$education == "primary", 1, 0)
+hesitancy$edu_secondary    <- ifelse(hesitancy$education == "secondary", 1, 0)
+hesitancy$edu_university   <- ifelse(hesitancy$education == "university", 1, 0)
+hesitancy$edu_other_higher <- ifelse(hesitancy$education == "other_higher", 1, 0)
+
+full_sample_desc_edu <- hesitancy %>%
+  group_by(country) %>%
+  dplyr::summarize(edu_none         = mean(edu_none, na.rm = TRUE),
+                   edu_primary      = mean(edu_primary, na.rm = TRUE),
+                   edu_secondary    = mean(edu_secondary, na.rm = TRUE),
+                   edu_university   = mean(edu_university, na.rm = TRUE),
+                   edu_other_higher = mean(edu_other_higher, na.rm = TRUE))
+
+full_sample_desc <- left_join(full_sample_desc, full_sample_desc_edu)
+
+full_sample_desc <- pivot_longer(full_sample_desc, cols = c("age",
+                                                            "male",
+                                                            "ses_low",
+                                                            "ses_mid",
+                                                            "ses_high",
+                                                            "edu_none",
+                                                            "edu_primary",
+                                                            "edu_secondary",
+                                                            "edu_university",
+                                                            "edu_other_higher"))
+
+full_sample_desc <- pivot_wider(full_sample_desc, id_cols = "name", names_from = "country")
+
+full_sample_desc <- full_sample_desc %>%
+  mutate(name = c("Age", "Male",
+                  "SES - Low", "SES - Middle", "SES - High",
+                  "Education - None", "Education - Primary", "Education - Secondary",
+                  "Education - Higher", "Education - Other Higher")) %>%
+  rename(Name = name)
+
+SI_table1_survey <- print(xtable(full_sample_desc, auto = TRUE, digits =), include.rownames = FALSE)
+
+write(SI_table1_survey, "Tables and Figures/SI_table1_survey.tex")
+
+## census data added manually: census data from Brazil, mexico from IPUMS Data from Argentina/education from IPUMS; NSE data (census) is from Netquest sampling strategy ("Sampling Strategy (from Netquest).xlsx) provided in replication data
+
+rm(list=setdiff(ls(), c("hesitancy", "make_table")))
+
+# Supplementary Information Table 2 - made manually
+
+# Supplementary Information Table 3 - distribution of treatment assignments
+
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
+SI_table3_raw <- as.data.frame(table(hesitant$motivation_treatment_enc, hesitant$information_treatment))
+
+SI_table3_raw <- SI_table3_raw %>%
+  mutate(Var2 = paste0("Info_", Var2))
+
+SI_table3_raw <- pivot_wider(SI_table3_raw,
+            id_cols = Var1,
+            names_from = Var2,
+            values_from = Freq)
+
+SI_table3_raw <- SI_table3_raw %>%
+  select(c(Var1, Info_0, Info_1, Info_8, Info_2, Info_3, Info_4, Info_5, Info_6, Info_7)) %>%
+  mutate(Var1 = c("None", "Altruism",
+                  "Economic Recovery", "Social Approval")) %>%
+  rowwise() %>%
+  mutate(Pooled = sum(c_across(starts_with("Info_"))))
+
+Pooled <- SI_table3_raw %>%
+  select(-Var1) %>% 
+    apply(., 2, sum)
+
+Pooled[length(Pooled)+1] <- "Pooled"
+Pooled <- c(Pooled[length(Pooled)], Pooled[1:10])
+
+SI_table3 <- rbind(SI_table3_raw, Pooled) %>%
+  rename("Motivational message?" = "Var1",
+         "None" = "Info_0",
+         "Vaccine" = "Info_1",
+         "Vaccine + Biden" = "Info_8",
+         "Vaccine + Herd 60%" = "Info_2",
+         "Vaccine + Herd 70%" = "Info_3",
+         "Vaccine + Herd 80%" = "Info_4",
+         "Vaccine + Herd 60% + Current" = "Info_5",
+         "Vaccine + Herd 70% + Current" = "Info_6",
+         "Vaccine + Herd 80% + Current" = "Info_7")
+
+SI_table3 <- print(xtable(SI_table3, auto = TRUE), include.rownames = FALSE)
+
+write(SI_table3, paste0("Tables and Figures/SI_table3_distribution.tex"))
+
+rm(list=setdiff(ls(), c("hesitancy", "make_table")))
+
+# Supplementary Information Table 4 - vaccine information comprehension tests
 
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
@@ -38,7 +183,7 @@ make_table(treatment = "factor(any_info_treatment)",
                               "Know that there are minimal side effects"),
            treatment_labels = c("Any vaccine information"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table2_manip_A"
+           table_name = "Tables and Figures/SI_table4_manip_A"
 )
 
 make_table(treatment = "factor(information_treatment)",
@@ -50,19 +195,19 @@ make_table(treatment = "factor(information_treatment)",
            one_tailed = FALSE,
            outcome_labels = c("Know that vaccines were approved",
                               "Know that there are minimal side effects"),
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%",
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current",
-                                "Health + Biden"),
+           treatment_labels = c("Vaccine",
+                                "Vaccine + herd 60%",
+                                "Vaccine + herd 70%",
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current",
+                                "Vaccine + Biden"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table2_manip_B"
+           table_name = "Tables and Figures/SI_table4_manip_B"
 )
 
-# Supplementary Information Table 3 - effect of any vaccine information on vaccine willingness
+# Supplementary Information Table 5 - effect of any vaccine information on vaccine willingness
 
 outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text_reversed2", "encourage2")
 
@@ -77,7 +222,7 @@ make_table(treatment = "factor(any_info_treatment)",
            outcome_labels = outcomes_labels,
            treatment_labels = "Any vaccine information",
            data = hesitant,
-           table_name = "Tables and Figures/SI_table3_anyinfo_pooled"
+           table_name = "Tables and Figures/SI_table5_anyinfo_pooled"
 )
 
 ## By Country
@@ -106,7 +251,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
              outcome_labels = outcomes_labels,
              treatment_labels = "Any vaccine information",
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table3_anyinfo_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table5_anyinfo_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -114,7 +259,7 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
 
-# Supplementary Information Table 4 - effect of different types of vaccine information on vaccine willingness.
+# Supplementary Information Table 6 - effect of different types of vaccine information on vaccine willingness.
 
 make_table(treatment = "factor(information_treatment)",
            interaction = NULL,
@@ -123,19 +268,19 @@ make_table(treatment = "factor(information_treatment)",
            weights = hesitant$IPW_info,
            one_tailed = FALSE,
            outcome_labels = outcomes_labels,
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
+           treatment_labels = c("Vaccine",
+                                "Vaccine + herd 60%",
+                                "Vaccine + herd 70%", 
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current", 
+                                "Vaccine + Biden"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table4_allinfo_pooled"
+           table_name = "Tables and Figures/SI_table6_allinfo_pooled"
 )
 
-# Supplementary Information Table 5 - effect of being informed that the current rate of vaccination willingness in the population is above/below the rate required for herd immunity
+# Supplementary Information Table 7 - effect of being informed that the current rate of vaccination willingness in the population is above/below the rate required for herd immunity
 
 # indicator for sample restrictions, treatment 2-7
 hesitant <- hesitant %>% mutate(t27 = ifelse(information_treatment >= 2 & 
@@ -202,9 +347,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table5_currentherdint", ".tex"),
+       file = paste0("Tables and Figures/SI_table7_currentherdint", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table5_currentherdint"),
+       label = paste0("table:", "SI_table7_currentherdint"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -223,7 +368,7 @@ texreg(models,
 
 rm(models, outcome_stats, observations, rsq)
 
-# Supplementary Information Table 6 - effect of different types of motivational message on vaccine willingness
+# Supplementary Information Table 8 - effect of different types of motivational message on vaccine willingness
 
 ## Pooled
 
@@ -238,7 +383,7 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Economic recovery",
                                 "Social approval"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table6_motiv"
+           table_name = "Tables and Figures/SI_table8_motiv"
 )
 
 ## By Country
@@ -259,7 +404,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
                                   "Economic recovery",
                                   "Social approval"),
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table6_motiv_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table8_motiv_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -268,7 +413,7 @@ hesitant <- hesitant_orig
 rm(hesitant_orig, i)
 rm(list=setdiff(ls(), c("hesitancy", "make_table")))
 
-# Supplementary Information Table 7 - effect of receiving any vaccination information on responding to main post-treatment outcome questions
+# Supplementary Information Table 9 - effect of receiving any vaccination information on responding to main post-treatment outcome questions
 
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
@@ -294,7 +439,7 @@ make_table(treatment = "factor(any_info_treatment)",
            outcome_labels = attrition_outcomes_labels,
            treatment_labels = "Any vaccine information",
            data = hesitant,
-           table_name = "Tables and Figures/SI_table7_attrition_anyinfo_pooled"
+           table_name = "Tables and Figures/SI_table9_attrition_anyinfo_pooled"
 )
 
 ## By Country
@@ -323,7 +468,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
              outcome_labels = attrition_outcomes_labels,
              treatment_labels = "Any vaccine information",
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table7_attrition_anyinfo_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table9_attrition_anyinfo_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -331,7 +476,7 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
 
-# Supplementary Information Table 8 - effect of motivational messages on responding to main post-treatment outcome questions
+# Supplementary Information Table 10 - effect of motivational messages on responding to main post-treatment outcome questions
 
 make_table(treatment = "factor(motivation_treatment_enc)",
            interaction = NULL,
@@ -344,7 +489,7 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Economic recovery",
                                 "Social approval"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table8_attrition_motiv_pooled"
+           table_name = "Tables and Figures/SI_table10_attrition_motiv_pooled"
 )
 
 ## By Country
@@ -384,7 +529,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
                                   "Economic recovery",
                                   "Social approval"),
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table8_attrition_motiv_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table10_attrition_motiv_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -392,7 +537,7 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i, attrition_outcomes, attrition_outcomes_labels)
 
-# Supplementary Information Table 9 - balance of vaccine information treatments over pre-treatment covariates
+# Supplementary Information Table 11 - balance of vaccine information treatments over pre-treatment covariates
 
 hesitant_orig <- hesitant
 
@@ -734,9 +879,9 @@ names(balance_info_table) <- c("Covariate",
 
 balance_info_table <- print(xtable(balance_info_table, auto = TRUE), include.rownames = FALSE)
 
-write(balance_info_table, paste0("Tables and Figures/SI_table9_balance_info.tex"))
+write(balance_info_table, paste0("Tables and Figures/SI_table11_balance_info.tex"))
 
-# Supplementary Information Table 10 - balance of motivational messages over pre-treatment covariates
+# Supplementary Information Table 12 - balance of motivational messages over pre-treatment covariates
 
 ## Run Models - Motivation
 
@@ -813,18 +958,18 @@ names(balance_motiv_table) <- c("Covariate",
 
 balance_info_table <- print(xtable(balance_motiv_table, auto = TRUE), include.rownames = FALSE)
 
-write(balance_info_table, "Tables and Figures/SI_table10_balance_motiv.tex")
+write(balance_info_table, "Tables and Figures/SI_table12_balance_motiv.tex")
 
 hesitant <- hesitant_orig
 
 rm(hesitant_orig, covariate_labels, pre_treatment_covariates)
 rm(list=ls(pattern="^balance"))
 
-# Supplementary Information Table 11 - Lee bounds on the effect of any vaccine information on vaccine willingness
+# Supplementary Information Table 13 - Lee bounds on the effect of any vaccine information on vaccine willingness
 
-# Supplementary Information Table 12 - Lee bounds on the effect of different types of motivational message on vaccine willingness
+# Supplementary Information Table 14 - Lee bounds on the effect of different types of motivational message on vaccine willingness
 
-# Supplementary Information Table 13 - effect of social approval versus altruistic motivational messages on vaccine willingness
+# Supplementary Information Table 15 - effect of social approval versus altruistic motivational messages on vaccine willingness
 
 outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text_reversed2", "encourage2")
 
@@ -842,10 +987,10 @@ make_table(treatment = "approval_vs_altruism",
            outcome_labels = outcomes_labels,
            treatment_labels = c("Social approval"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table13_approval_v_altruism"
+           table_name = "Tables and Figures/SI_table15_approval_v_altruism"
 )
 
-# Supplementary Information Table 14 - effect of different types of vaccine information on reasons for becoming less hesitant, among treated respondents
+# Supplementary Information Table 16 - effect of different types of vaccine information on reasons for becoming less hesitant, among treated respondents
 
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
@@ -875,20 +1020,20 @@ make_table(treatment = "factor(info_treatment_anybase)",
            weights = df$IPW_info,
            one_tailed = FALSE,
            outcome_labels = c("Less worried about side effects", "Less worried about getting Covid-19 from vaccine", "Less worried about speed of development", "Less worried about vaccine ineffectiveness", "Now getting vaccinated even if low risk", "No longer wants immunity from infection", "Now getting vaccinated even if already had Covid−19", "Now trusting of government", "Less worried about cost"),
-           treatment_labels = c("Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
+           treatment_labels = c("Vaccine + herd 60%",
+                                "Vaccine + herd 70%", 
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current", 
+                                "Vaccine + Biden"),
            data = df,
-           table_name = "Tables and Figures/SI_table14_reasonschange"
+           table_name = "Tables and Figures/SI_table16_reasonschange"
 )
 
 rm(df, dv_reasons)
 
-# Supplementary Information Table 15 - effect of any vaccine information on vaccine willingness, by pre-treatment covariate
+# Supplementary Information Table 17 - effect of any vaccine information on vaccine willingness, by pre-treatment covariate
 
 ## recode NSE data
 
@@ -941,10 +1086,10 @@ make_table(treatment = "factor(any_info_treatment)",
            outcome_labels = outcomes_labels,
            treatment_labels = c("Any vaccine information", "Woman", "Age, 25-34", "Age, 35-44", "Age, 45-54", "Age, 55-64", "Age, 65+", "Middle SES", "High SES", "Would vote for president", "Primary education", "Secondary education", "Other higher education", "University education", "Any vaccine information $\\times$ woman", "Any vaccine information $\\times$ age, 25-34", "Any vaccine information $\\times$ age, 35-44", "Any vaccine information $\\times$ age, 45-54", "Any vaccine information $\\times$ age, 55-64", "Any vaccine information $\\times$ age, 65+", "Any vaccine information $\\times$ Middle SES", "Any vaccine information $\\times$ High SES", "Any vaccine information $\\times$ would vote for president", "Any vaccine information $\\times$ primary education", "Any vaccine information $\\times$ secondary education", "Any vaccine information $\\times$ other higher education", "Any vaccine information $\\times$ university"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table15_allhet_anyinfo"
+           table_name = "Tables and Figures/SI_table17_allhet_anyinfo"
 )
 
-# Supplementary Information Table 16 - effect of different types of different expert opinion herd immunity opinion on vaccine willingness, by how the information relates to individual prior beliefs
+# Supplementary Information Table 18 - effect of different types of different expert opinion herd immunity opinion on vaccine willingness, by how the information relates to individual prior beliefs
 
 outcomes <- c("percent_for_imm_post_1", "hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text_reversed2", "encourage2")
 
@@ -985,9 +1130,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table16_hi_het_A", ".tex"),
+       file = paste0("Tables and Figures/SI_table18_hi_het_A", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table16_hi_het_A"),
+       label = paste0("table:", "SI_table18_hi_het_A"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -1041,9 +1186,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table16_hi_het_B", ".tex"),
+       file = paste0("Tables and Figures/SI_table18_hi_het_B", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table16_hi_het_B"),
+       label = paste0("table:", "SI_table18_hi_het_B"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -1063,7 +1208,7 @@ texreg(models,
 rm(hesitant27)
 rm(models, outcome_stats, observations, rsq)
 
-# Supplementary Information Table 17 - effect of vaccine information on vaccine willingness, by how cur-rent willingness relates to individual prior beliefs
+# Supplementary Information Table 19 - effect of vaccine information on vaccine willingness, by how current willingness relates to individual prior beliefs
 
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
@@ -1122,9 +1267,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table17_cw_het_A", ".tex"),
+       file = paste0("Tables and Figures/SI_table19_cw_het_A", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table17_cw_het_A"),
+       label = paste0("table:", "SI_table19_cw_het_A"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -1168,9 +1313,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table17_cw_het_B", ".tex"),
+       file = paste0("Tables and Figures/SI_table19_cw_het_B", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table17_cw_het_B"),
+       label = paste0("table:", "SI_table19_cw_het_B"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -1194,7 +1339,7 @@ texreg(models,
 
 rm(list=setdiff(ls(), c("hesitancy", "make_table")))
 
-# Supplementary Information Table 18 - correlation between prior beliefs and prior vaccine willingness
+# Supplementary Information Table 20 - correlation between prior beliefs and prior vaccine willingness
 
 hesitancy <- hesitancy %>%
   filter(speeder != 1)
@@ -1228,9 +1373,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models_pre,
        include.ci = FALSE,
-       file = "Tables and Figures/SI_table18_pretreat_outcomes_on_rates.tex",
+       file = "Tables and Figures/SI_table20_pretreat_outcomes_on_rates.tex",
        caption = NULL,
-       label = paste0("table:", "SI_table18_pretreat_outcomes_on_rates"),
+       label = paste0("table:", "SI_table20_pretreat_outcomes_on_rates"),
        stars = c(0.01, 0.05, 0.1),
        digits = 6,
        custom.model.names = outcomes_labels,
@@ -1241,7 +1386,7 @@ texreg(models_pre,
        ),
 )
 
-# Supplementary Information Table 19 - effect of any motivational messages on vaccine willingness, by pre-treatment covariate
+# Supplementary Information Table 21 - effect of any motivational messages on vaccine willingness, by pre-treatment covariate
 
 hesitant <- hesitancy %>%
   filter(sample_causal == 1) %>%
@@ -1284,10 +1429,10 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Altruism $\\times$ other higher education", "Economic recovery $\\times$ other higher education", "Social status $\\times$ other higher education",
                                 "Altruism $\\times$ university", "Economic recovery $\\times$ university", "Social status $\\times$ university"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table19_allhet_motiv"
+           table_name = "Tables and Figures/SI_table21_allhet_motiv"
 )
 
-# Supplementary Information Table 20 - effect of any vaccine information on vaccine willingness, by motivational message
+# Supplementary Information Table 22 - effect of any vaccine information on vaccine willingness, by motivational message
 
 make_table(treatment = "factor(motivation_treatment_enc)",
            interaction = "factor(motivation_treatment_enc)*factor(any_info_treatment)",
@@ -1304,10 +1449,148 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Economic recovery $\\times$ Any vaccine information",
                                 "Social status $\\times$ Any vaccine information"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table20_anyinfo_x_motiv"
+           table_name = "Tables and Figures/SI_table22_anyinfo_x_motiv"
 )
 
-# Supplementary Information Table 21 - effect of any vaccine information on demand for further vaccine information
+# Supplementary Information Table 23 - effect of any vaccine information on encourage others (linear)
+
+outcomes <- "encourage_others"
+
+outcomes_labels <- "Encourage others to vaccinate"
+
+hesitancy <- read_dta("vaccine_wide.dta")
+
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+## Pooled
+
+make_table(treatment = "factor(any_info_treatment)",
+           interaction = NULL,
+           outcome_vars = outcomes,
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_any_info_treatment,
+           one_tailed = FALSE,
+           outcome_labels = outcomes_labels,
+           treatment_labels = "Any vaccine information",
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table23_anyinfo_pooled_encourage1-4"
+)
+
+## By Country
+
+hesitant_orig <- hesitant
+
+hesitant_orig <- hesitant_orig %>%
+  mutate(country = case_when(
+    country == "Perú" ~ "Peru",
+    country == "México" ~ "Mexico",
+    country == "Chile" ~ "Chile",
+    country == "Colombia" ~ "Colombia",
+    country == "Argentina" ~ "Argentina",
+    country == "Brasil" ~ "Brazil"
+  ))
+
+for (i in 1:length(unique(hesitant_orig$country))) {
+  hesitant <- subset(hesitant_orig, hesitant_orig$country == unique(hesitant_orig$country)[i])
+  
+  make_table(treatment = "factor(any_info_treatment)",
+             interaction = NULL,
+             outcome_vars = outcomes,
+             fixed_effects = "factor(fixed_effects)",
+             weights = hesitant$IPW_any_info_treatment,
+             one_tailed = FALSE,
+             outcome_labels = outcomes_labels,
+             treatment_labels = "Any vaccine information",
+             data = hesitant,
+             table_name = paste0("Tables and Figures/SI_table23_anyinfo_", unique(hesitant_orig$country)[i], "_encourage1-4")
+  )
+}
+
+hesitant <- hesitant_orig
+
+rm(hesitant_orig, i)
+
+# Supplementary Information Table 24 - effect of different types of vaccine information treatment on encourage others (linear)
+
+make_table(treatment = "factor(information_treatment)",
+           interaction = NULL,
+           outcome_vars = outcomes,
+           fixed_effects = "factor(fixed_effects)",
+           weights = hesitant$IPW_info,
+           one_tailed = FALSE,
+           outcome_labels = outcomes_labels,
+           treatment_labels = c("Vaccine",
+                                "Vaccine + herd 60%",
+                                "Vaccine + herd 70%", 
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current", 
+                                "Vaccine + Biden"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table24_allinfo_pooled_encourage1-4"
+)
+
+# Supplementary Information Table 25 - effect of different types of motivational message on on encourage others (linear)
+
+## Pooled
+
+make_table(treatment = "factor(motivation_treatment_enc)",
+           interaction = NULL,
+           outcome_vars = outcomes,
+           fixed_effects = "factor(fixed_effects)",
+           weights = NULL,
+           one_tailed = FALSE,
+           outcome_labels = outcomes_labels,
+           treatment_labels = c("Altruism",
+                                "Economic recovery",
+                                "Social approval"),
+           data = hesitant,
+           table_name = "Tables and Figures/SI_table25_motiv_encourage1-4_pooled"
+)
+
+## By Country
+
+hesitant <- hesitancy %>%
+  filter(sample_causal == 1) %>%
+  filter(speeder != 1)
+
+hesitant_orig <- hesitant
+
+hesitant_orig <- hesitant_orig %>%
+  mutate(country = case_when(
+    country == "Perú" ~ "Peru",
+    country == "México" ~ "Mexico",
+    country == "Chile" ~ "Chile",
+    country == "Colombia" ~ "Colombia",
+    country == "Argentina" ~ "Argentina",
+    country == "Brasil" ~ "Brazil"
+  ))
+
+for (i in 1:length(unique(hesitant_orig$country))) {
+  hesitant <- subset(hesitant_orig, hesitant_orig$country == unique(hesitant_orig$country)[i])
+  
+  make_table(treatment = "factor(motivation_treatment_enc)",
+             interaction = NULL,
+             outcome_vars = outcomes,
+             fixed_effects = "factor(fixed_effects)",
+             weights = NULL,
+             one_tailed = FALSE,
+             outcome_labels = outcomes_labels,
+             treatment_labels = c("Altruism",
+                                  "Economic recovery",
+                                  "Social approval"),
+             data = hesitant,
+             table_name = paste0("Tables and Figures/SI_table25_motiv_", unique(hesitant_orig$country)[i], "_encourage1-4")
+  )
+}
+
+hesitant <- hesitant_orig
+
+rm(hesitant_orig, i)
+
+# Supplementary Information Table 26 - effect of any vaccine information on demand for further vaccine information
 
 outcomes <- c("want_more_info", "clicked")
 
@@ -1331,7 +1614,7 @@ make_table(treatment = "factor(any_info_treatment)",
            outcome_labels = outcomes_labels,
            treatment_labels = "Any vaccine information",
            data = hesitant,
-           table_name = "Tables and Figures/SI_table21_anyinfo_pooled_behav"
+           table_name = "Tables and Figures/SI_table26_anyinfo_pooled_behav"
 )
 
 ## By Country
@@ -1361,7 +1644,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
              outcome_labels = outcomes_labels,
              treatment_labels = "Any vaccine information",
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table21_anyinfo_", unique(hesitant_orig$country)[i], "_behav")
+             table_name = paste0("Tables and Figures/SI_table26_anyinfo_", unique(hesitant_orig$country)[i], "_behav")
   )
 }
 
@@ -1369,7 +1652,7 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
 
-# Supplementary Information Table 22 - effect of different types of vaccine information treatment on demandfor further vaccine information
+# Supplementary Information Table 27 - effect of different types of vaccine information treatment on demand for further vaccine information
 
 make_table(treatment = "factor(information_treatment)",
            interaction = NULL,
@@ -1378,19 +1661,19 @@ make_table(treatment = "factor(information_treatment)",
            weights = hesitant$IPW_info,
            one_tailed = FALSE,
            outcome_labels = outcomes_labels,
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
+           treatment_labels = c("Vaccine",
+                                "Vaccine + herd 60%",
+                                "Vaccine + herd 70%", 
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current", 
+                                "Vaccine + Biden"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table22_allinfo_pooled_behav"
+           table_name = "Tables and Figures/SI_table27_allinfo_pooled_behav"
 )
 
-# Supplementary Information Table 23 - effect of different types of motivational message on demand for further vaccine information
+# Supplementary Information Table 28 - effect of different types of motivational message on demand for further vaccine information
 
 ## Pooled
 
@@ -1405,7 +1688,7 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Economic recovery",
                                 "Social approval"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table23_motiv_behav_pooled"
+           table_name = "Tables and Figures/SI_table28_motiv_behav_pooled"
 )
 
 ## By Country
@@ -1442,145 +1725,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
                                   "Economic recovery",
                                   "Social approval"),
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table23_motiv_", unique(hesitant_orig$country)[i], "_behav")
-  )
-}
-
-hesitant <- hesitant_orig
-
-rm(hesitant_orig, i)
-
-# Supplementary Information Table 21b - effect of any vaccine information on encourage others (linear)
-
-outcomes <- "encourage_others"
-
-outcomes_labels <- "Encourage others to vaccinate"
-
-hesitancy <- read_dta("vaccine_wide.dta")
-
-hesitant <- hesitancy %>%
-  filter(sample_causal == 1) %>%
-  filter(speeder != 1)
-## Pooled
-
-make_table(treatment = "factor(any_info_treatment)",
-           interaction = NULL,
-           outcome_vars = outcomes,
-           fixed_effects = "factor(fixed_effects)",
-           weights = hesitant$IPW_any_info_treatment,
-           one_tailed = FALSE,
-           outcome_labels = outcomes_labels,
-           treatment_labels = "Any vaccine information",
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table21_anyinfo_pooled_encourage1-4"
-)
-
-## By Country
-
-hesitant_orig <- hesitant
-
-hesitant_orig <- hesitant_orig %>%
-  mutate(country = case_when(
-    country == "Perú" ~ "Peru",
-    country == "México" ~ "Mexico",
-    country == "Chile" ~ "Chile",
-    country == "Colombia" ~ "Colombia",
-    country == "Argentina" ~ "Argentina",
-    country == "Brasil" ~ "Brazil"
-  ))
-
-for (i in 1:length(unique(hesitant_orig$country))) {
-  hesitant <- subset(hesitant_orig, hesitant_orig$country == unique(hesitant_orig$country)[i])
-  
-  make_table(treatment = "factor(any_info_treatment)",
-             interaction = NULL,
-             outcome_vars = outcomes,
-             fixed_effects = "factor(fixed_effects)",
-             weights = hesitant$IPW_any_info_treatment,
-             one_tailed = FALSE,
-             outcome_labels = outcomes_labels,
-             treatment_labels = "Any vaccine information",
-             data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table21_anyinfo_", unique(hesitant_orig$country)[i], "_encourage1-4")
-  )
-}
-
-hesitant <- hesitant_orig
-
-rm(hesitant_orig, i)
-
-# Supplementary Information Table 22b - effect of different types of vaccine information treatment on linear encourage others
-
-make_table(treatment = "factor(information_treatment)",
-           interaction = NULL,
-           outcome_vars = outcomes,
-           fixed_effects = "factor(fixed_effects)",
-           weights = hesitant$IPW_info,
-           one_tailed = FALSE,
-           outcome_labels = outcomes_labels,
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table22_allinfo_pooled_encourage1-4"
-)
-
-# Supplementary Information Table 23b - effect of different types of motivational message on linear encourage others
-
-## Pooled
-
-make_table(treatment = "factor(motivation_treatment_enc)",
-           interaction = NULL,
-           outcome_vars = outcomes,
-           fixed_effects = "factor(fixed_effects)",
-           weights = NULL,
-           one_tailed = FALSE,
-           outcome_labels = outcomes_labels,
-           treatment_labels = c("Altruism",
-                                "Economic recovery",
-                                "Social approval"),
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table23_motiv_encourage1-4_pooled"
-)
-
-## By Country
-
-hesitant <- hesitancy %>%
-  filter(sample_causal == 1) %>%
-  filter(speeder != 1)
-
-hesitant_orig <- hesitant
-
-hesitant_orig <- hesitant_orig %>%
-  mutate(country = case_when(
-    country == "Perú" ~ "Peru",
-    country == "México" ~ "Mexico",
-    country == "Chile" ~ "Chile",
-    country == "Colombia" ~ "Colombia",
-    country == "Argentina" ~ "Argentina",
-    country == "Brasil" ~ "Brazil"
-  ))
-
-for (i in 1:length(unique(hesitant_orig$country))) {
-  hesitant <- subset(hesitant_orig, hesitant_orig$country == unique(hesitant_orig$country)[i])
-  
-  make_table(treatment = "factor(motivation_treatment_enc)",
-             interaction = NULL,
-             outcome_vars = outcomes,
-             fixed_effects = "factor(fixed_effects)",
-             weights = NULL,
-             one_tailed = FALSE,
-             outcome_labels = outcomes_labels,
-             treatment_labels = c("Altruism",
-                                  "Economic recovery",
-                                  "Social approval"),
-             data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table23_motiv_", unique(hesitant_orig$country)[i], "_encourage1-4")
+             table_name = paste0("Tables and Figures/SI_table28_motiv_", unique(hesitant_orig$country)[i], "_behav")
   )
 }
 
@@ -1602,7 +1747,7 @@ outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text
 
 outcomes_labels <- c("Willing to vaccinate scale", "Willing to vaccinate", "Wait until vaccinate (reversed)", "Encourage others to vaccinate")
 
-# Table 24
+# Table 29
 
 make_table(treatment = "factor(any_info_treatment)",
            interaction = NULL,
@@ -1613,7 +1758,7 @@ make_table(treatment = "factor(any_info_treatment)",
            outcome_labels = outcomes_labels,
            treatment_labels = "Any vaccine information",
            data = hesitant,
-           table_name = "Tables and Figures/SI_table24_anyinfo_joint_pooled"
+           table_name = "Tables and Figures/SI_table29_anyinfo_joint_pooled"
 )
 
 ## By Country
@@ -1642,7 +1787,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
              outcome_labels = outcomes_labels,
              treatment_labels = "Any vaccine information",
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table24_anyinfo_joint_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table29_anyinfo_joint_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -1650,7 +1795,7 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
 
-# Table 25
+# Table 30
 
 make_table(treatment = "factor(information_treatment)",
            interaction = NULL,
@@ -1659,19 +1804,19 @@ make_table(treatment = "factor(information_treatment)",
            weights = hesitant$IPW_info*hesitant$weight_joint,
            one_tailed = FALSE,
            outcome_labels = outcomes_labels,
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
+           treatment_labels = c("Vaccine",
+                                "Vaccine + herd 60%",
+                                "Vaccine + herd 70%", 
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current", 
+                                "Vaccine + Biden"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table25_allinfo_pooled_joint"
+           table_name = "Tables and Figures/SI_table30_allinfo_pooled_joint"
 )
 
-# Table 26
+# Table 31
 
 # indicator for sample restrictions, treatment 2-7
 hesitant <- hesitant %>% mutate(t27 = ifelse(information_treatment >= 2 & 
@@ -1740,9 +1885,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table26_currentherdint_joint", ".tex"),
+       file = paste0("Tables and Figures/SI_table31_currentherdint_joint", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table26_currentherdint_joint"),
+       label = paste0("table:", "SI_table31_currentherdint_joint"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -1761,7 +1906,7 @@ texreg(models,
 
 rm(models, outcome_stats, observations, rsq)
 
-# Table 27
+# Table 32
 
 ## Pooled
 
@@ -1776,7 +1921,7 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Economic recovery",
                                 "Social approval"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table27_motiv_joint"
+           table_name = "Tables and Figures/SI_table32_motiv_joint"
 )
 
 ## By Country
@@ -1797,7 +1942,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
                                   "Economic recovery",
                                   "Social approval"),
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table27_motiv_joint_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table32_motiv_joint_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -1820,7 +1965,7 @@ outcomes <- c("hesitancy_post_rec", "hesitancy_dummy_post", "quickly_post_1_text
 
 outcomes_labels <- c("Willing to vaccinate scale", "Willing to vaccinate", "Wait until vaccinate (reversed)", "Encourage others to vaccinate")
 
-# Table 28
+# Table 33
 
 make_table(treatment = "factor(any_info_treatment)",
            interaction = NULL,
@@ -1831,7 +1976,7 @@ make_table(treatment = "factor(any_info_treatment)",
            outcome_labels = outcomes_labels,
            treatment_labels = "Any vaccine information",
            data = hesitant,
-           table_name = "Tables and Figures/SI_table28_anyinfo_rake_pooled"
+           table_name = "Tables and Figures/SI_table33_anyinfo_rake_pooled"
 )
 
 ## By Country
@@ -1860,7 +2005,7 @@ for (i in 1:length(unique(hesitant_orig$country))) {
              outcome_labels = outcomes_labels,
              treatment_labels = "Any vaccine information",
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table28_anyinfo_rake_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table33_anyinfo_rake_", unique(hesitant_orig$country)[i])
   )
 }
 
@@ -1868,7 +2013,7 @@ hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
 
-# Table 29
+# Table 34
 
 make_table(treatment = "factor(information_treatment)",
            interaction = NULL,
@@ -1877,19 +2022,19 @@ make_table(treatment = "factor(information_treatment)",
            weights = hesitant$IPW_info*hesitant$weight_rake_ses,
            one_tailed = FALSE,
            outcome_labels = outcomes_labels,
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
+           treatment_labels = c("Vaccine",
+                                "Vaccine + herd 60%",
+                                "Vaccine + herd 70%", 
+                                "Vaccine + herd 80%",
+                                "Vaccine + herd 60% + current",
+                                "Vaccine + herd 70% + current",
+                                "Vaccine + herd 80% + current", 
+                                "Vaccine + Biden"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table29_allinfo_pooled_rake"
+           table_name = "Tables and Figures/SI_table34_allinfo_pooled_rake"
 )
 
-# Table 30
+# Table 35
 
 # indicator for sample restrictions, treatment 2-7
 hesitant <- hesitant %>% mutate(t27 = ifelse(information_treatment >= 2 & 
@@ -1957,9 +2102,9 @@ rsq <- sapply(1:length(outcomes), function(y)
 
 texreg(models,
        include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table30_currentherdint_rake", ".tex"),
+       file = paste0("Tables and Figures/SI_table35_currentherdint_rake", ".tex"),
        caption = NULL,
-       label = paste0("table:", "SI_table30_currentherdint_rake"),
+       label = paste0("table:", "SI_table35_currentherdint_rake"),
        stars = c(0.01, 0.05, 0.1),
        digits = 3,
        custom.model.names = outcomes_labels,
@@ -1978,7 +2123,7 @@ texreg(models,
 
 rm(models, outcome_stats, observations, rsq)
 
-# Table 31
+# Table 36
 
 ## Pooled
 
@@ -1993,7 +2138,7 @@ make_table(treatment = "factor(motivation_treatment_enc)",
                                 "Economic recovery",
                                 "Social approval"),
            data = hesitant,
-           table_name = "Tables and Figures/SI_table31_motiv_rake"
+           table_name = "Tables and Figures/SI_table36_motiv_rake"
 )
 
 ## By Country
@@ -2014,243 +2159,13 @@ for (i in 1:length(unique(hesitant_orig$country))) {
                                   "Economic recovery",
                                   "Social approval"),
              data = hesitant,
-             table_name = paste0("Tables and Figures/SI_table31_motiv_rake_", unique(hesitant_orig$country)[i])
+             table_name = paste0("Tables and Figures/SI_table36_motiv_rake_", unique(hesitant_orig$country)[i])
   )
 }
 
 hesitant <- hesitant_orig
 
 rm(hesitant_orig, i)
-
-# Table 32
-
-# Robustness to linear coding of encourage others
-
-## Equivalent to Table 3
-
-make_table(treatment = "factor(any_info_treatment)",
-           interaction = NULL,
-           outcome_vars = "encourage_others",
-           fixed_effects = "factor(fixed_effects)",
-           weights = hesitant$IPW_any_info_treatment,
-           one_tailed = FALSE,
-           outcome_labels = "Encourage others to vaccinate",
-           treatment_labels = "Any vaccine information",
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table32_anyinfo_pooled_encouragelin"
-)
-
-## Equivalent to Table 4
-
-make_table(treatment = "factor(information_treatment)",
-           interaction = NULL,
-           outcome_vars = "encourage_others",
-           fixed_effects = "factor(fixed_effects)",
-           weights = hesitant$IPW_info,
-           one_tailed = FALSE,
-           outcome_labels = "Encourage others to vaccinate",
-           treatment_labels = c("Health",
-                                "Health + herd 60%",
-                                "Health + herd 70%", 
-                                "Health + herd 80%",
-                                "Health + herd 60% + current",
-                                "Health + herd 70% + current",
-                                "Health + herd 80% + current", 
-                                "Health + Biden"),
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table32_allinfo_pooled_encouragelin"
-)
-
-## Equivalent to Table 5
-
-# indicator for sample restrictions, treatment 2-7
-hesitant <- hesitant %>% mutate(t27 = ifelse(information_treatment >= 2 & 
-                                               information_treatment <= 7, 1, 0))
-
-# restrict sample to treatments 2-7
-hesitant27 <- hesitant %>% filter(t27 == 1)
-
-# indicator for receiving current wtv info
-hesitant27 <- hesitant27 %>% mutate(received_wtv = ifelse(information_treatment >= 5 &
-                                                            information_treatment <= 7, 1, 0))
-
-
-# indicator for whether herd immunity level seen is greater than wtv rate seen
-hesitant27 <- hesitant27 %>% mutate(herd_seen = ifelse(information_treatment==5 | information_treatment==2, 60,
-                                                       ifelse(information_treatment==6 | information_treatment==3, 70, 
-                                                              ifelse(information_treatment==7 | information_treatment==4, 80, 0))))
-
-hesitant27 <- hesitant27 %>% mutate(herd_above_wtv = ifelse(herd_seen > current_willingness, 1, 0))
-
-# current willingness indicators
-hesitant27 <- hesitant27 %>% mutate(current_56 = ifelse(current_willingness==56, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_57 = ifelse(current_willingness==57, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_58 = ifelse(current_willingness==58, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_61 = ifelse(current_willingness==61, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_64 = ifelse(current_willingness==64, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_66 = ifelse(current_willingness==66, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_67 = ifelse(current_willingness==67, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_73 = ifelse(current_willingness==73, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_75 = ifelse(current_willingness==75, 1, 0))
-hesitant27 <- hesitant27 %>% mutate(current_79 = ifelse(current_willingness==79, 1, 0))
-
-# demean the first 9 indicators by subtracting the mean of the corresponding indicator in the sample that we will use for estimation
-hesitant27 <- hesitant27 %>% mutate(d_current_56 = (current_56 - mean(current_56)))
-hesitant27 <- hesitant27 %>% mutate(d_current_57 = (current_57 - mean(current_57)))
-hesitant27 <- hesitant27 %>% mutate(d_current_58 = (current_58 - mean(current_58)))
-hesitant27 <- hesitant27 %>% mutate(d_current_61 = (current_61 - mean(current_61)))
-hesitant27 <- hesitant27 %>% mutate(d_current_64 = (current_64 - mean(current_64)))
-hesitant27 <- hesitant27 %>% mutate(d_current_66 = (current_66 - mean(current_66)))
-hesitant27 <- hesitant27 %>% mutate(d_current_67 = (current_67 - mean(current_67)))
-hesitant27 <- hesitant27 %>% mutate(d_current_73 = (current_73 - mean(current_73)))
-hesitant27 <- hesitant27 %>% mutate(d_current_75 = (current_75 - mean(current_75)))
-
-outcomes <- "encourage_others"
-
-models <- lapply(outcomes, function(y)
-  lm_robust(as.formula(paste0(y, " ~ received_wtv + herd_above_wtv + received_wtv*herd_above_wtv + factor(current_willingness) + received_wtv*d_current_56 + received_wtv*d_current_57 + received_wtv*d_current_58 + received_wtv*d_current_61 + received_wtv*d_current_64 + received_wtv*d_current_66 + received_wtv*d_current_67 + received_wtv*d_current_73 + received_wtv*d_current_75 + std_months_pre")),
-            fixed_effects = factor(fixed_effects),
-            data = hesitant27,
-            se_type = "stata")
-)
-
-outcome_stats <- hesitant27 %>%
-  filter(received_wtv == 0 & herd_above_wtv == 0) %>%
-  dplyr::summarize(across(
-    all_of(outcomes),
-    .fns = list(Mean = ~mean(., na.rm = TRUE),
-                SD = ~sd(., na.rm = TRUE))))
-
-observations <- sapply(1:length(outcomes), function(y)
-  format(nobs(models[[y]]), big.mark = ","))
-
-rsq <- sapply(1:length(outcomes), function(y)
-  round(models[[y]]$r.squared, 3)
-)
-
-texreg(models,
-       include.ci = FALSE,
-       file = paste0("Tables and Figures/SI_table32_currentherdint_encouragelin", ".tex"),
-       caption = NULL,
-       label = paste0("table:", "SI_table32_currentherdint_encouragelin"),
-       stars = c(0.01, 0.05, 0.1),
-       digits = 3,
-       custom.model.names = "Encourage others to vaccinate",
-       custom.coef.names = c("Current", 
-                             "Herd opinion above current rate",
-                             rep("", 19),
-                             "Current $\\times$ herd opinion above current rate",
-                             rep("", 9)),
-       custom.gof.rows = list("Outcome range" = c("[1,5]", "{0,1}", "[0,12]", "{0,1}"),
-                              "Control outcome mean" = round(as.numeric(outcome_stats[seq(from = 1, to = length(outcome_stats), by = 2)]),2),
-                              "Control outcome std. dev" = round(as.numeric(outcome_stats[seq(from = 2, to = length(outcome_stats), by = 2)]),2),
-                              "Observations" = observations,
-                              "R$^{2}$" = rsq
-       ),
-)
-
-rm(models, outcome_stats, observations, rsq)
-
-## Equivalent to Table 6
-
-make_table(treatment = "factor(motivation_treatment_enc)",
-           interaction = NULL,
-           outcome_vars = "encourage_others",
-           fixed_effects = "factor(fixed_effects)",
-           weights = NULL,
-           one_tailed = FALSE,
-           outcome_labels = "Encourage others to vaccinate",
-           treatment_labels = c("Altruism",
-                                "Economic recovery",
-                                "Social approval"),
-           data = hesitant,
-           table_name = "Tables and Figures/SI_table32_motiv_encouragelin"
-)
-
-# Table 33 - Descriptive Stats
-
-full_sample_desc <- hesitancy %>%
-  group_by(country) %>%
-  summarise(
-    pct_age1824         = mean(age_bin_netquest == "18_24", na.rm = TRUE),
-    pct_age2534         = mean(age_bin_netquest == "25_34", na.rm = TRUE),
-    pct_age3544         = mean(age_bin_netquest == "35_44", na.rm = TRUE),
-    pct_age4554         = mean(age_bin_netquest == "45_54", na.rm = TRUE),
-    pct_age5564         = mean(age_bin_netquest == "55_64", na.rm = TRUE),
-    pct_age65plus       = mean(age_bin_netquest == "65_or_above", na.rm = TRUE),
-    pct_women           = mean(sex == 2, na.rm = TRUE),
-    pct_men             = mean(sex == 1, na.rm = TRUE),
-    pct_edu_none        = mean(education == "none", na.rm = TRUE),
-    pct_edu_primary     = mean(education == "primary", na.rm = TRUE),
-    pct_edu_secondary   = mean(education == "secondary", na.rm = TRUE),
-    pct_edu_university  = mean(education == "university", na.rm = TRUE),
-    pct_edu_otherhigher = mean(education == "other_higher", na.rm = TRUE)
-  )
-
-hesitant_sample_desc <- hesitant %>%
-  group_by(country) %>%
-  summarise(
-    pct_age1824         = mean(age_bin_netquest == "18_24", na.rm = TRUE),
-    pct_age2534         = mean(age_bin_netquest == "25_34", na.rm = TRUE),
-    pct_age3544         = mean(age_bin_netquest == "35_44", na.rm = TRUE),
-    pct_age4554         = mean(age_bin_netquest == "45_54", na.rm = TRUE),
-    pct_age5564         = mean(age_bin_netquest == "55_64", na.rm = TRUE),
-    pct_age65plus       = mean(age_bin_netquest == "65_or_above", na.rm = TRUE),
-    pct_women           = mean(sex == 2, na.rm = TRUE),
-    pct_men             = mean(sex == 1, na.rm = TRUE),
-    pct_edu_none        = mean(education == "none", na.rm = TRUE),
-    pct_edu_primary     = mean(education == "primary", na.rm = TRUE),
-    pct_edu_secondary   = mean(education == "secondary", na.rm = TRUE),
-    pct_edu_university  = mean(education == "university", na.rm = TRUE),
-    pct_edu_otherhigher = mean(education == "other_higher", na.rm = TRUE)
-  )
-
-population_desc <- read_excel("Sampling Strategy (from Netquest).xlsx", 
-                              sheet = "Summary")
-
-population_comparisons <- data.frame(unique(hesitancy$country))
-names(population_comparisons) <- "Country"
-
-population_comparisons <- population_comparisons %>%
-  mutate(`Age 18-24 Full Sample`     = full_sample_desc$pct_age1824,
-         `Age 18-24 Hesitant Sample` = hesitant_sample_desc$pct_age1824,
-         `Age 15-24 Population`      = population_desc$pct_age1524,
-         `Age 25-34 Full Sample`     = full_sample_desc$pct_age2534,
-         `Age 25-34 Hesitant Sample` = hesitant_sample_desc$pct_age2534,
-         `Age 25-34 Population`      = population_desc$pct_age2534,
-         `Age 35-44 Full Sample`     = full_sample_desc$pct_age3544,
-         `Age 35-44 Hesitant Sample` = hesitant_sample_desc$pct_age3544,
-         `Age 35-44 Population`      = population_desc$pct_age3544,
-         `Age 45-54 Full Sample`     = full_sample_desc$pct_age4554,
-         `Age 45-54 Hesitant Sample` = hesitant_sample_desc$pct_age4554,
-         `Age 45-54 Population`      = population_desc$pct_age4554,
-         `Age 55-64 Full Sample`     = full_sample_desc$pct_age5564,
-         `Age 55-64 Hesitant Sample` = hesitant_sample_desc$pct_age5564,
-         `Age 55-64 Population`      = population_desc$pct_age5564,
-         `Age 65+   Full Sample`     = full_sample_desc$pct_age65plus,
-         `Age 65+   Hesitant Sample` = hesitant_sample_desc$pct_age65plus,
-         `Age 65+   Population`      = population_desc$pct_age65plus,
-         `Women Full Sample`         = full_sample_desc$pct_women,
-         `Women Hesitant Sample`     = hesitant_sample_desc$pct_women,
-         `Women Population`          = population_desc$pct_women,
-         `Men Full Sample`           = full_sample_desc$pct_men,
-         `Men Hesitant Sample`       = hesitant_sample_desc$pct_men,
-         `Men Population`            = population_desc$pct_men,
-  )
-
-round_and_percent <- function(x) {
-  m <- round(x,4)*100
-  return(paste0(m, sep = "%"))
-}
-
-population_comparisons <- population_comparisons %>% 
-  mutate_if(is.numeric, round_and_percent)
-
-population_comparisons <- print(xtable(population_comparisons, auto = TRUE), include.rownames = FALSE)
-
-write(population_comparisons, "Tables and Figures/SI_table33_descstats.tex")
-
-rm(list=setdiff(ls(), c("hesitancy", "make_table")))
 
 ## Fix all tables
 
@@ -2269,5 +2184,5 @@ for (t in 1:length(tables_list)) {
   write(SI_tables[[t]], file = paste0("Tables and Figures/", tables_list[[t]]))
 }
 
-## Note: edit control group mean and std. dev. for Table 5
-## Note: manually edit control group mean and std dev. for Table 20
+## Note: edit control group mean and std. dev. for Table 7?
+## Note: manually edit control group mean and std dev. for Table 22?

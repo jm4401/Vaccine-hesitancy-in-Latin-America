@@ -1,9 +1,7 @@
-use "D:\Dropbox\Latin America Vaccine Hesitancy\Vaccine-Hesitancy\02. Cleaned data\vaccine_wide.dta", clear
+use "/Vaccine-hesitancy-in-Latin-America/vaccine_wide.dta"
 drop if speeder==1
 
-
-
-*** Bounding tests for Supllementary Table 11
+*** Bounding tests for Supplementary Table 13
 
 eststo clear
 quietly foreach y of varlist hesitancy_post_rec hesitancy_dummy_post quickly_post_1_text_reversed encourage2 {
@@ -18,10 +16,8 @@ quietly foreach y of varlist hesitancy_post_rec hesitancy_dummy_post quickly_pos
 }
 estout, style(tex) stats(CI control_mean control_sd Nsel trimming, fmt(%9.0fc 2 2 %9.0fc 3) labels("Treatment effect 95\% confidence interval" ///
 	"\\ Control outcome mean" "Control outcome std. dev." "Number of selected observations" "Share of control observations trimmed")) drop(upper lower)
-
-
 	
-*** Bounding tests for Supllementary Table 12
+*** Bounding tests for Supplementary Table 14
 cap tab motivation_treatment_enc, g(motiv)
 
 * Panel A
