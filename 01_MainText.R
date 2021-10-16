@@ -75,7 +75,7 @@ hesitancy5p_dk <- ggplot() +
   theme(axis.text= element_text(size=12), 
         legend.text = element_text(size = 12))
 
-pdf("Tables and Figures/Figure2_A.pdf")
+pdf("Figure2_A.pdf")
 print(hesitancy5p_dk)
 dev.off()
 
@@ -145,7 +145,7 @@ timetovaxplot <- ggplot()+
   theme(axis.text= element_text(size=12), 
         legend.text = element_text(size = 12))
 
-pdf("Tables and Figures/Figure2_B.pdf")
+pdf("Figure2_B.pdf")
 print(timetovaxplot)
 dev.off()
 
@@ -200,7 +200,7 @@ plot_reasons <- df_long %>% arrange(mean_wr) %>%
                             "Side effects")) + 
   theme(axis.text.y = element_text(size = 13))
 
-pdf(file="Tables and Figures/Figure3_A.pdf")
+pdf(file="Figure3_A.pdf")
 print(plot_reasons)
 dev.off()
 
@@ -240,7 +240,7 @@ reasons_post <- df_long %>% arrange(mean_wr) %>%
 
 print(reasons_post)
 
-pdf(file="Tables and Figures/Figure3_B.pdf")
+pdf(file="Figure3_B.pdf")
 print(reasons_post)
 dev.off()
 
@@ -400,7 +400,7 @@ atebp <- ggplot(data = regout[['hesitancy_post_rec']], aes(x = country, y=coefpl
 
 print(atebp)
 
-pdf(file="Tables and Figures/Figure4_A.pdf")
+pdf(file="Figure4_A.pdf")
 print(atebp)
 dev.off()
 
@@ -422,7 +422,7 @@ atebp <- ggplot(data = regout[['hesitancy_dummy_post']], aes(x = country, y=coef
 
 print(atebp)
 
-pdf(file="Tables and Figures/Figure4_B.pdf")
+pdf(file="Figure4_B.pdf")
 print(atebp)
 dev.off()
 
@@ -446,7 +446,7 @@ atebp <- ggplot(data = regout[['quickly_post_1_text_reversed2']], aes(x = countr
 
 print(atebp)
 
-pdf(file="Tables and Figures/Figure4_C.pdf")
+pdf(file="Figure4_C.pdf")
 print(atebp)
 dev.off()
 
@@ -468,7 +468,7 @@ atebp <-  ggplot(data = regout[['encourage2']], aes(x = country, y=coefplus, fil
 
 print(atebp)
 
-pdf(file="Tables and Figures/Figure4_D.pdf")
+pdf(file="Figure4_D.pdf")
 print(atebp)
 dev.off()
 
@@ -559,7 +559,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=information_treat
         axis.text = element_text(size=13.5))
 print(atebp)
 
-pdf("Tables and Figures/Figure5_A.pdf", width = 8.5, height = 7.2)
+pdf("Figure5_A.pdf", width = 8.5, height = 7.2)
 print(atebp)
 dev.off()
 
@@ -633,7 +633,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=information_treat
 
 print(atebp)
 
-pdf("Tables and Figures/Figure5_B.pdf", width = 8.5, height = 7.2)
+pdf("Figure5_B.pdf", width = 8.5, height = 7.2)
 print(atebp)
 dev.off()
 
@@ -725,7 +725,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill= as.factor(inform
 
 print(atebp)
 
-pdf("Tables and Figures/Figure5_C.pdf", width = 8.5, height = 7.2)
+pdf("Figure5_C.pdf", width = 8.5, height = 7.2)
 print(atebp)
 dev.off()
 
@@ -798,7 +798,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=information_treat
 
 print(atebp)
 
-pdf("Tables and Figures/Figure5_D.pdf", width = 8.5, height = 7.2)
+pdf("Figure5_D.pdf", width = 8.5, height = 7.2)
 print(atebp)
 dev.off()
 
@@ -975,7 +975,7 @@ herd_current <- ggplot(regout, aes(ord_outcome, coef)) +
 
 print(herd_current)
 
-pdf("Tables and Figures/Figure6.pdf")
+pdf("Figure6.pdf")
 print(herd_current)
 dev.off()
 
@@ -1066,7 +1066,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=motivation_treatm
         axis.text=element_text(size=13))
 
 print(atebp)
-pdf("Tables and Figures/Figure7_A.pdf")
+pdf("Figure7_A.pdf")
 print(atebp)
 dev.off()
 
@@ -1136,7 +1136,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=motivation_treatm
 
 print(atebp)
 
-pdf("Tables and Figures/Figure7_B.pdf")
+pdf("Figure7_B.pdf")
 print(atebp)
 dev.off()
 
@@ -1209,7 +1209,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=motivation_treatm
 
 print(atebp)
 
-pdf("Tables and Figures/Figure7_C.pdf")
+pdf("Figure7_C.pdf")
 print(atebp)
 dev.off()
 
@@ -1278,7 +1278,7 @@ atebp <- ggplot(data = regout, aes(x = coefs, y=coefplus, fill=motivation_treatm
 
 print(atebp)
 
-pdf("Tables and Figures/Figure7_D.pdf")
+pdf("Figure7_D.pdf")
 print(atebp)
 dev.off()
 

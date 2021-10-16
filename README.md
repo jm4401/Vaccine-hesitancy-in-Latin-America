@@ -1,6 +1,6 @@
 This directory replicates the analysis in "Messages that Increase COVID-19 Vaccine Acceptance: Evidence from Online Experiments in Six Latin American Countries," by Argote, Barham, Daly, Gerez, Marshall, and Pocasangre
 
-Before running the code, create a folder titled "Tables and Figures" in the directory to save all the necessary outputs.
+Before running the code ensure that you have downloaded the main data file as a .dta file.
 
 * 00_table_function.R is an extra script that is used to create many of the tables in the supplementary information
 * 01_MainText.R replicates the figures in the main text
