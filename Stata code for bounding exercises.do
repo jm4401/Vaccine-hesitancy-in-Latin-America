@@ -5,7 +5,7 @@ drop if speeder==1
 
 eststo clear
 quietly foreach y of varlist hesitancy_post_rec hesitancy_dummy_post quickly_post_1_text_reversed encourage2 {
-	eststo, title("`y'"): leebounds `y' any_info if group!=. & std_months_pre!=. [weight=IPW_any], cieffect
+	eststo, title("`y'"): leebounds `y' any_info if std_months_pre!=. [weight=IPW_any], cieffect
 	local L: di %6.3f `e(cilower)'
 	local U: di %6.3f `e(ciupper)'
 	estadd local CI = "[`L',`U']"
